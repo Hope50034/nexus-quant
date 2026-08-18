@@ -813,41 +813,44 @@
 .drawer-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  border: none;
-  background: rgba(255, 255, 255, 0.03);
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
   border: 1px solid var(--border-glass);
-  border-radius: 12px;
-  padding: 0.3rem 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 0.45rem 1rem;
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   user-select: none;
 }
 
 .drawer-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
-  border-color: var(--cyber-blue);
-  box-shadow: 0 0 10px rgba(0, 216, 255, 0.2);
+  background: rgba(0, 216, 255, 0.08);
+  color: var(--cyber-blue);
+  border-color: rgba(0, 216, 255, 0.4);
+  box-shadow: 0 0 12px rgba(0, 216, 255, 0.25);
 }
 
 .options-drawer-content {
   overflow: hidden;
   margin-top: 0.75rem;
+  width: 100%;
 }
 
 .recessed-options-grid {
-  background: rgba(4, 7, 12, 0.9);
+  background: rgba(4, 7, 12, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   padding: 0.875rem;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.625rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 0.625rem;
   box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.6);
 }
 
@@ -857,6 +860,10 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  padding: 0.4rem 0.25rem;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
 }
 
 .options-label {
@@ -865,7 +872,7 @@
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
 }
 
 .options-value {
@@ -877,12 +884,22 @@
 
 .options-value.high-iv {
   color: var(--neon-red);
-  text-shadow: 0 0 8px rgba(255, 42, 95, 0.5);
+  text-shadow: 0 0 8px rgba(255, 42, 95, 0.6);
 }
 
 .options-value.low-iv {
   color: var(--neon-green);
-  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+}
+
+.options-value.neg-gamma {
+  color: var(--neon-red);
+  text-shadow: 0 0 8px rgba(255, 42, 95, 0.6);
+}
+
+.options-value.pos-gamma {
+  color: var(--neon-green);
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
 }
 
 /* Loading Skeleton */

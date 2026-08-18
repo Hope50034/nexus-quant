@@ -535,8 +535,13 @@ function App() {
             const glowColor = isBuy ? '#00ff88' : '#ff2e2e'
             const currentTab = getCardActiveTab(signal.symbol)
             const isExpanded = isDrawerExpanded(signal.symbol)
-            const ivRankValue = 84
-            const isHighIv = ivRankValue >= 80
+            const ivRankVal = signal.symbol === 'QQQ' || signal.symbol === 'TSLA' || signal.symbol === 'NVDA' ? 88 : 34
+            const isHighIv = ivRankVal >= 80
+            const isLowIv = ivRankVal <= 20
+            const pcRatio = signal.symbol === 'QQQ' ? '1.15' : '0.92'
+            const impliedMove = signal.symbol === 'QQQ' ? '±$4.50' : '±$12.30'
+            const isNegGamma = signal.symbol === 'QQQ' || signal.symbol === 'TSLA' || !isBuy
+            const gammaVal = isNegGamma ? 'Negative' : 'Positive'
 
             return (
               <motion.div
@@ -599,7 +604,7 @@ function App() {
                               <motion.div
                                 className={`card-tab-glider ${isBuy ? 'buy' : 'sell'}`}
                                 layoutId={`tab-glider-${signal.symbol}`}
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                transition={{ type: 'spring', stiffness: 450, damping: 30 }}
                               />
                             )}
                           </button>
@@ -633,7 +638,6 @@ function App() {
                             strokeWidth={2}
                             fillOpacity={1}
                             fill={`url(#${gradientId})`}
-                            isAnimationActive={true}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
@@ -681,7 +685,7 @@ function App() {
                     </div>
                     <div className="future-chip">
                       <span>IV RANK</span>
-                      <span className="future-chip-val">34.2%</span>
+                      <span className="future-chip-val">{ivRankVal}%</span>
                     </div>
                   </div>
                 </div>
@@ -703,7 +707,7 @@ function App() {
                   </button>
                 </div>
 
-                {/* Collapsible Recessed Options Grid */}
+                {/* Collapsible Recessed 2x2 Options Grid */}
                 <AnimatePresence>
                   {isExpanded && (
                     <motion.div
@@ -716,19 +720,26 @@ function App() {
                       <div className="recessed-options-grid">
                         <div className="options-cell">
                           <span className="options-label">IV RANK</span>
-                          <span className={`options-value ${isHighIv ? 'high-iv' : 'low-iv'}`}>
-                            {ivRankValue}%
+                          <span className={`options-value ${isHighIv ? 'high-iv' : isLowIv ? 'low-iv' : ''}`}>
+                            {ivRankVal}%
                           </span>
                         </div>
 
                         <div className="options-cell">
-                          <span className="options-label">PUT/CALL</span>
-                          <span className="options-value">1.20</span>
+                          <span className="options-label">P/C RATIO</span>
+                          <span className="options-value">{pcRatio}</span>
                         </div>
 
                         <div className="options-cell">
-                          <span className="options-label">IMPLIED MOVE</span>
-                          <span className="options-value">±$14.50</span>
+                          <span className="options-label">0DTE IMPLIED MOVE</span>
+                          <span className="options-value">{impliedMove}</span>
+                        </div>
+
+                        <div className="options-cell">
+                          <span className="options-label">GAMMA EXPOSURE</span>
+                          <span className={`options-value ${isNegGamma ? 'neg-gamma' : 'pos-gamma'}`}>
+                            {gammaVal}
+                          </span>
                         </div>
                       </div>
                     </motion.div>
