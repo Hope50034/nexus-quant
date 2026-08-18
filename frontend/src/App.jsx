@@ -319,55 +319,44 @@ function App() {
   }
 
   return (
-    <div className="dashboard-container">
-      {/* 1. The Command Header */}
-      <header className="command-header">
-        <div className="brand-section">
-          <div className="brand-icon-box">
-            <Cpu size={26} />
+    <div className="quant-dashboard-root">
+      {/* Premium Vercel Light Mode Header */}
+      <header className="app-header">
+        <div className="header-brand">
+          <div className="brand-logo-icon">
+            <Cpu size={22} />
           </div>
-          <div className="brand-info">
-            <h1 className="brand-title">
-              NEXUS <span style={{ color: 'var(--cyber-blue)', fontWeight: 300 }}>//</span> QUANT
-            </h1>
-            <span className="brand-subtitle">Algorithmic Signal Engine</span>
+          <div className="brand-title-group">
+            <h1 className="brand-name">NEXUS // QUANT</h1>
+            <span className="brand-subtitle">Algorithmic Signal Engine // SYSTEM ONLINE</span>
           </div>
         </div>
 
-        {/* Animated Pill-Shaped Toggle Switch */}
-        <div className="toggle-container">
-          <div className="pill-toggle-track" role="group" aria-label="Signal Type Switcher">
+        <div className="header-controls">
+          <div className="segmented-control">
             <button
-              className={`pill-toggle-btn ${signalType === 'buy' ? 'active buy' : ''}`}
+              className={`toggle-btn ${signalType === 'buy' ? 'active-buy' : ''}`}
               onClick={() => setSignalType('buy')}
             >
-              <TrendingUp size={18} />
-              <span>Bullish MACD</span>
-              <span className="toggle-tag">BUY</span>
+              <TrendingUp size={15} />
+              <span>Bullish</span>
             </button>
             <button
-              className={`pill-toggle-btn ${signalType === 'sell' ? 'active sell' : ''}`}
+              className={`toggle-btn ${signalType === 'sell' ? 'active-sell' : ''}`}
               onClick={() => setSignalType('sell')}
             >
-              <TrendingDown size={18} />
-              <span>Bearish MACD</span>
-              <span className="toggle-tag">SELL</span>
+              <TrendingDown size={15} />
+              <span>Bearish</span>
             </button>
           </div>
 
-          {/* Sparkling AI Command Toggle Button */}
           <button
-            className={`ai-command-btn ${isAiOpen ? 'active' : ''}`}
-            onClick={() => setIsAiOpen(!isAiOpen)}
+            className="ai-command-btn"
+            onClick={() => setIsSidebarOpen(true)}
           >
-            <Zap size={16} style={{ color: 'var(--cyber-blue)' }} />
-            <span>AI COMMAND</span>
+            <Sparkles size={15} />
+            <span>AI Command</span>
           </button>
-        </div>
-
-        <div className="header-system-meta">
-          <span className="live-beacon"></span>
-          <span>SYSTEM ONLINE // {signalType === 'buy' ? '/signals/buy/' : '/signals/sell/'}</span>
         </div>
       </header>
 
@@ -532,9 +521,11 @@ function App() {
             const capsuleMeta = getAssetCapsuleMeta(signal.asset_type)
             const trendData = generate7DayTrendData(signal)
             const gradientId = `gradient-${signal.symbol.replace(/[^a-zA-Z0-9]/g, '')}`
-            const glowColor = isBuy ? '#00ff88' : '#ff2e2e'
+            const glowColor = isBuy ? '#10B981' : '#EF4444'
             const currentTab = getCardActiveTab(signal.symbol)
             const isExpanded = isDrawerExpanded(signal.symbol)
+
+            // Options Volatility Metrics Heuristic
             const ivRankVal = signal.symbol === 'QQQ' || signal.symbol === 'TSLA' || signal.symbol === 'NVDA' ? 88 : 34
             const isHighIv = ivRankVal >= 80
             const isLowIv = ivRankVal <= 20
@@ -546,31 +537,26 @@ function App() {
             return (
               <motion.div
                 key={signal.symbol}
-                className={`quant-card ${isBuy ? 'buy-mode' : 'sell-mode'}`}
+                className="quant-card"
                 variants={itemVariants}
-                whileHover={{ scale: 1.02, y: -6 }}
+                whileHover={{ scale: 1.01, y: -3 }}
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
               >
-                {/* Header & Asset Capsule Tag */}
+                {/* Card Header */}
                 <div className="quant-card-header">
                   <div className="symbol-group">
                     <span className="quant-symbol">
+                      <span className={`signal-status-dot ${isBuy ? 'bullish' : 'bearish'}`} />
                       {signal.symbol}
-                      {isBuy ? (
-                        <ArrowUpRight size={18} style={{ color: 'var(--neon-green)' }} />
-                      ) : (
-                        <ArrowDownRight size={18} style={{ color: 'var(--neon-red)' }} />
-                      )}
                     </span>
                   </div>
 
-                  {/* Asset Capsule Tag */}
                   <span className={`asset-capsule-tag ${capsuleMeta.styleClass}`}>
                     {capsuleMeta.label}
                   </span>
                 </div>
 
-                {/* Data Layout: Trigger Date & Close Price */}
+                {/* Price & Trigger Block */}
                 <div className="price-trigger-block">
                   <div className="data-cell">
                     <span className="data-cell-label">CLOSE PRICE</span>
@@ -586,23 +572,23 @@ function App() {
                   </div>
                 </div>
 
-                {/* Card Micro-Navigation & Technical Visualizer */}
+                {/* TradingView Price Action Chart Container */}
                 <div className="sparkline-container">
                   <div className="sparkline-header">
-                    {/* Micro-Nav Tabs */}
+                    <span className="chart-placeholder-label">PRICE ACTION CHART</span>
                     <div className="card-tab-nav" role="tablist">
                       {['MACD', 'EMA', 'CANDLE'].map((tab) => {
                         const isActive = currentTab === tab
                         return (
                           <button
                             key={tab}
-                            className={`card-tab-btn ${isActive ? `active ${isBuy ? 'buy' : 'sell'}` : ''}`}
+                            className={`card-tab-btn ${isActive ? 'active' : ''}`}
                             onClick={() => handleCardTabChange(signal.symbol, tab)}
                           >
                             <span style={{ position: 'relative', zIndex: 1 }}>{tab}</span>
                             {isActive && (
                               <motion.div
-                                className={`card-tab-glider ${isBuy ? 'buy' : 'sell'}`}
+                                className="card-tab-glider"
                                 layoutId={`tab-glider-${signal.symbol}`}
                                 transition={{ type: 'spring', stiffness: 450, damping: 30 }}
                               />
@@ -611,22 +597,15 @@ function App() {
                         )
                       })}
                     </div>
-
-                    <span className={`sparkline-trend-tag ${isBuy ? 'buy' : 'sell'}`}>
-                      {currentTab === 'MACD' && (isBuy ? 'POSITIVE MACD' : 'NEGATIVE DIVERGENCE')}
-                      {currentTab === 'EMA' && (isBuy ? '20 EMA > 50 EMA' : '20 EMA < 50 EMA')}
-                      {currentTab === 'CANDLE' && (isBuy ? 'BULLISH VOL' : 'BEARISH VOL')}
-                    </span>
                   </div>
 
-                  {/* Swappable Chart Component */}
-                  <div className="sparkline-chart-wrapper">
+                  <div className="recharts-wrapper-area">
                     {currentTab === 'MACD' && (
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={trendData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
                           <defs>
                             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={glowColor} stopOpacity={0.4} />
+                              <stop offset="5%" stopColor={glowColor} stopOpacity={0.25} />
                               <stop offset="95%" stopColor={glowColor} stopOpacity={0.0} />
                             </linearGradient>
                           </defs>
@@ -648,7 +627,7 @@ function App() {
                         <LineChart data={trendData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
                           <YAxis domain={['auto', 'auto']} hide />
                           <Line type="monotone" dataKey="macd" stroke={glowColor} strokeWidth={2} dot={false} />
-                          <Line type="monotone" dataKey="signal" stroke="var(--cyber-blue)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
+                          <Line type="monotone" dataKey="signal" stroke="var(--accent-blue)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     )}
@@ -667,26 +646,6 @@ function App() {
                     <span>MACD: {macdVal > 0 ? `+${macdVal.toFixed(4)}` : macdVal.toFixed(4)}</span>
                     <span>SIGNAL: {macdSigVal > 0 ? `+${macdSigVal.toFixed(4)}` : macdSigVal.toFixed(4)}</span>
                     <span>DELTA: {diff >= 0 ? `+${diff.toFixed(4)}` : diff.toFixed(4)}</span>
-                  </div>
-                </div>
-
-                {/* Future-Proofing Technical Indicator Section */}
-                <div className="future-proof-section">
-                  <div className="future-module-header">
-                    <span>UPCOMING INDICATOR MODULES</span>
-                    <BarChart3 size={13} style={{ color: 'var(--text-dim)' }} />
-                  </div>
-                  <div className="future-module-grid">
-                    <div className="future-chip">
-                      <span>200 EMA</span>
-                      <span className="future-chip-val" style={{ color: isBuy ? 'var(--neon-green)' : 'var(--neon-red)' }}>
-                        {isBuy ? 'ABOVE' : 'BELOW'}
-                      </span>
-                    </div>
-                    <div className="future-chip">
-                      <span>IV RANK</span>
-                      <span className="future-chip-val">{ivRankVal}%</span>
-                    </div>
                   </div>
                 </div>
 
