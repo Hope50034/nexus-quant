@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-qatlj^kp090*87r_jwe6t%0*3z8c82_@i__gn+612*=ppl(-st
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
 
 
 # Application definition
@@ -135,4 +136,9 @@ MAILERS = {
     },
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+]
+CORS_ALLOW_ALL_ORIGINS = True

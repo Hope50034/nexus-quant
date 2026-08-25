@@ -1,4 +1,3 @@
 @echo off
-cd "C:\Users\itintern\Desktop\Projects"
-python market_etl.py
-
+cd /d "C:\Users\itintern\Desktop\Projects"
+".\venv\Scripts\python.exe" market_etl.py

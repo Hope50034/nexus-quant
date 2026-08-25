@@ -1,0 +1,164 @@
+import { useEffect, useRef } from 'react'
+import { createChart, ColorType, CandlestickSeries } from 'lightweight-charts'
+
+/**
+ * Formats market price objects into the required lightweight-charts candlestick data structure.
+ * Expected input: array of { time/Date, open, high, low, close } or MarketPrices dicts.
+ */
+export function formatCandleData(rawData = []) {
+  if (!Array.isArray(rawData)) return []
+
+  const formatted = rawData.map(item => {
+    let dateStr = ''
+    if (item.time) {
+      dateStr = typeof item.time === 'string' ? item.time.split('T')[0] : item.time
+    } else if (item.TradeDate || item.trade_date) {
+      dateStr = item.TradeDate || item.trade_date
+    } else if (item.Date || item.date) {
+      dateStr = item.Date || item.date
+    } else {
+      dateStr = new Date().toISOString().split('T')[0]
+    }
+
+    const open = parseFloat(item.open ?? item.OpenPrice ?? item.Open ?? item.close_price ?? 0)
+    const high = parseFloat(item.high ?? item.HighPrice ?? item.High ?? item.close_price ?? 0)
+    const low = parseFloat(item.low ?? item.LowPrice ?? item.Low ?? item.close_price ?? 0)
+    const close = parseFloat(item.close ?? item.ClosePrice ?? item.Close ?? item.close_price ?? 0)
+
+    return {
+      time: dateStr,
+      open,
+      high: Math.max(open, high, close),
+      low: Math.min(open, low, close),
+      close
+    }
+  })
+
+  // Sort chronologically ascending and deduplicate by date for TradingView engine safety
+  const seenDates = new Set()
+  return formatted
+    .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+    .filter(item => {
+      if (seenDates.has(item.time)) return false
+      seenDates.add(item.time)
+      return true
+    })
+}
+
+export default function TradingChart({ data = [], isBuy = true, height = 160 }) {
+  const chartContainerRef = useRef(null)
+  const chartRef = useRef(null)
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return
+
+    const container = chartContainerRef.current
+    const initialWidth = container.clientWidth || 300
+
+    // Initialize TradingView Lightweight Chart with Fintech Minimalist Light Mode styling
+    const chart = createChart(container, {
+      width: initialWidth,
+      height: height,
+      watermark: {
+        visible: false,
+      },
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#64748B',
+        fontSize: 11,
+        fontFamily: "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+      },
+      grid: {
+        vertLines: { color: '#F1F5F9' },
+        horzLines: { color: '#F1F5F9' }
+      },
+      crosshair: {
+        vertLine: {
+          color: isBuy ? '#10B981' : '#EF4444',
+          width: 1,
+          style: 3, // Dashed
+        },
+        horzLine: {
+          color: isBuy ? '#10B981' : '#EF4444',
+          width: 1,
+          style: 3,
+        }
+      },
+      rightPriceScale: {
+        borderVisible: false,
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+      },
+      timeScale: {
+        fixLeftEdge: true,
+        fixRightEdge: true,
+        borderVisible: false,
+        timeVisible: false,
+        secondsVisible: false,
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMove: true,
+      },
+      handleScale: {
+        axisPressedMove: true,
+        mouseWheel: true,
+        pinch: true,
+      }
+    })
+
+    chartRef.current = chart
+
+    // Create Candlestick Series using v5 addSeries API
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: '#10B981',
+      downColor: '#EF4444',
+      borderUpColor: '#10B981',
+      borderDownColor: '#EF4444',
+      wickUpColor: '#10B981',
+      wickDownColor: '#EF4444',
+      wickVisible: true,
+      borderVisible: true,
+    })
+
+    const candleData = formatCandleData(data)
+    if (candleData.length > 0) {
+      candleSeries.setData(candleData)
+      chart.timeScale().fitContent()
+    }
+
+    // Responsive ResizeObserver to adapt chart size dynamically when parent card container resizes
+    const resizeObserver = new ResizeObserver(entries => {
+      if (entries[0] && entries[0].contentRect) {
+        const { width } = entries[0].contentRect
+        if (width > 0) {
+          chart.applyOptions({ width })
+          chart.timeScale().fitContent()
+        }
+      }
+    })
+
+    resizeObserver.observe(container)
+
+    return () => {
+      resizeObserver.disconnect()
+      chart.remove()
+      chartRef.current = null
+    }
+  }, [data, isBuy, height])
+
+  return (
+    <div
+      ref={chartContainerRef}
+      style={{
+        width: '100%',
+        height: `${height}px`,
+        position: 'relative',
+        borderRadius: '6px',
+        overflow: 'hidden'
+      }}
+    />
+  )
+}

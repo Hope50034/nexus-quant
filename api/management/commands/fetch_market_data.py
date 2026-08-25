@@ -45,13 +45,26 @@ class Command(BaseCommand):
         updated_count = 0
         created_count = 0
 
-        for ticker_symbol, asset_type in self.TARGET_TICKERS.items():
+        db_tickers = {}
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT DISTINCT Symbol, AssetType FROM MarketPrices")
+                for row in cursor.fetchall():
+                    if row[0]:
+                        db_tickers[row[0].strip().upper()] = row[1] or 'Stock'
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f"Could not query distinct db tickers: {e}"))
+
+        active_tickers = {**self.TARGET_TICKERS, **db_tickers}
+
+        for ticker_symbol, asset_type in active_tickers.items():
             self.stdout.write(f"\n[+] Processing Ticker: {ticker_symbol} ({asset_type})...")
 
             try:
                 # 1. Download price action data via yfinance
                 ticker = yf.Ticker(ticker_symbol)
-                df = ticker.history(period="6mo", interval="1d")
+                df = ticker.history(period="1y", interval="1d")
+
 
                 if df.empty:
                     self.stdout.write(self.style.WARNING(f"  [!] Warning: No price data returned for {ticker_symbol}."))
