@@ -15,27 +15,44 @@ except ImportError:
 class Command(BaseCommand):
     help = 'Fetches live market price action from Yahoo Finance, calculates MACD/EMA indicators, and updates database signals.'
 
-    # Expanded Target Ticker Universe
+    # Expanded Multi-Asset Target Ticker Universe
     TARGET_TICKERS = {
-        # Major Crypto
+        # Tech & Megacap US Equities
+        'AAPL': 'Stock',
+        'MSFT': 'Stock',
+        'GOOGL': 'Stock',
+        'AMZN': 'Stock',
+        'NVDA': 'Stock',
+        'TSLA': 'Stock',
+        'META': 'Stock',
+        'NFLX': 'Stock',
+        'AVGO': 'Stock',
+        'AMD': 'Stock',
+        'PLTR': 'Stock',
+        'SMCI': 'Stock',
+        'ARM': 'Stock',
+        'QCOM': 'Stock',
+
+        # High-Beta & Crypto-Linked Equities
+        'COIN': 'Stock',
+        'MSTR': 'Stock',
+
+        # Major Indices & ETFs
+        'SPY': 'Stock',
+        'QQQ': 'Stock',
+        'IWM': 'Stock',
+        'DIA': 'Stock',
+
+        # Commodities & Precious Metals
+        'GLD': 'Commodity',
+        'SLV': 'Commodity',
+        'USO': 'Commodity',
+        'UNG': 'Commodity',
+
+        # Major Digital Assets
         'BTC-USD': 'Crypto',
         'ETH-USD': 'Crypto',
         'SOL-USD': 'Crypto',
-
-        # High-Volatility Tech (US Equities)
-        'NVDA': 'Stock',
-        'TSLA': 'Stock',
-        'AMD': 'Stock',
-        'PLTR': 'Stock',
-        'META': 'Stock',
-        'AAPL': 'Stock',
-        'MSFT': 'Stock',
-
-        # Indices & Commodities
-        'SPY': 'Stock',
-        'QQQ': 'Stock',
-        'GLD': 'Commodity',
-        'USO': 'Commodity',
     }
 
     def handle(self, *args, **options):

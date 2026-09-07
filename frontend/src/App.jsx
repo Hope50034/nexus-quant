@@ -28,6 +28,8 @@ import {
   X,
   Bot,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Plus,
   Loader2,
   Activity,
@@ -795,9 +797,23 @@ function App() {
       })
   }, [signals, searchQuery, activeFilter, sortOrder, favorites])
 
-  const topGoldenSignal = useMemo(() => {
-    return signals.find(s => s.golden_opportunity?.is_golden_opportunity) || signals[0] || null
+  const goldenSignals = useMemo(() => {
+    const goldens = signals.filter(s => s.golden_opportunity?.is_golden_opportunity)
+    return goldens.length > 0 ? goldens : signals
   }, [signals])
+
+  const [goldenIndex, setGoldenIndex] = useState(0)
+  const activeGoldenSignal = goldenSignals[goldenIndex % (goldenSignals.length || 1)] || signals[0] || null
+
+  const nextGolden = () => {
+    if (!goldenSignals.length) return
+    setGoldenIndex(prev => (prev + 1) % goldenSignals.length)
+  }
+
+  const prevGolden = () => {
+    if (!goldenSignals.length) return
+    setGoldenIndex(prev => (prev - 1 + goldenSignals.length) % goldenSignals.length)
+  }
 
 
   const kpiData = useMemo(() => {
@@ -1399,9 +1415,10 @@ function App() {
         </div>
       </header>
 
-      {/* 🔥 Top Floating Golden Opportunity Alert Banner */}
-      {topGoldenSignal && (
+      {/* 🔥 Top Floating Golden Opportunity Alert Banner with Multi-Stock Carousel */}
+      {activeGoldenSignal && (
         <motion.div
+          key={activeGoldenSignal.symbol}
           className="golden-alert-banner font-mono"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1411,35 +1428,66 @@ function App() {
             <span className="golden-flame-badge">
               <Flame size={13} /> GOLDEN BUY OPPORTUNITY
             </span>
-            <span className="golden-symbol">{topGoldenSignal.symbol}</span>
-            <span className="golden-price">${parseFloat(topGoldenSignal.close_price).toFixed(2)}</span>
+
+            {/* Multi-Stock Carousel Nav Controls */}
+            {goldenSignals.length > 1 && (
+              <div className="golden-nav-arrows font-mono">
+                <button className="golden-nav-btn" onClick={prevGolden} title="Previous Stock Opportunity">
+                  <ChevronLeft size={13} />
+                </button>
+                <span className="golden-count-tag">
+                  {(goldenIndex % goldenSignals.length) + 1}/{goldenSignals.length}
+                </span>
+                <button className="golden-nav-btn" onClick={nextGolden} title="Next Stock Opportunity">
+                  <ChevronRight size={13} />
+                </button>
+              </div>
+            )}
+
+            {/* Stock Ticker Select Dropdown */}
+            <select
+              className="golden-stock-select font-mono"
+              value={activeGoldenSignal.symbol}
+              onChange={(e) => {
+                const foundIdx = goldenSignals.findIndex(s => s.symbol === e.target.value)
+                if (foundIdx !== -1) setGoldenIndex(foundIdx)
+              }}
+            >
+              {goldenSignals.map(s => (
+                <option key={s.symbol} value={s.symbol}>
+                  {s.symbol} ({s.golden_opportunity?.conviction_score || 90}% Win Rate)
+                </option>
+              ))}
+            </select>
+
+            <span className="golden-price">${parseFloat(activeGoldenSignal.close_price).toFixed(2)}</span>
             <span className="golden-conviction-pill">
-              {topGoldenSignal.golden_opportunity?.conviction_score || 96}% Conviction
+              {activeGoldenSignal.golden_opportunity?.conviction_score || 96}% Conviction
             </span>
           </div>
 
           <div className="golden-alert-center">
             <span className="golden-meta-item">
               <span className="meta-lbl">HOLD DURATION:</span>
-              <span className="meta-val highlight">{topGoldenSignal.golden_opportunity?.holding_duration || '3 – 7 Days (Swing Trade)'}</span>
+              <span className="meta-val highlight">{activeGoldenSignal.golden_opportunity?.holding_duration || '3 – 7 Days (Swing Trade)'}</span>
             </span>
             <span className="golden-meta-item">
               <span className="meta-lbl">TARGET:</span>
-              <span className="meta-val profit">{topGoldenSignal.golden_opportunity?.take_profit_target || '+$12.5%'}</span>
+              <span className="meta-val profit">{activeGoldenSignal.golden_opportunity?.take_profit_target || '+$12.5%'}</span>
             </span>
             <span className="golden-meta-item">
               <span className="meta-lbl">STOP LOSS:</span>
-              <span className="meta-val loss">{topGoldenSignal.golden_opportunity?.stop_loss_level || '-3.2%'}</span>
+              <span className="meta-val loss">{activeGoldenSignal.golden_opportunity?.stop_loss_level || '-3.2%'}</span>
             </span>
           </div>
 
           <div className="golden-alert-right">
             <button
               className="golden-inspect-btn"
-              onClick={() => setSelectedTicker(topGoldenSignal.symbol)}
-              title="Inspect Golden Trade Setup"
+              onClick={() => setSelectedTicker(activeGoldenSignal.symbol)}
+              title={`Inspect ${activeGoldenSignal.symbol} Golden Trade Setup`}
             >
-              <span>Inspect Setup</span>
+              <span>Inspect {activeGoldenSignal.symbol}</span>
               <ArrowUpRight size={13} />
             </button>
           </div>

@@ -8465,3 +8465,59 @@ a[title*="TradingView"], #tv-attr-logo, .tv-lightweight-charts-watermark {
   background: #451a03;
   box-shadow: 0 2px 8px rgba(120, 53, 15, 0.25);
 }
+
+/* Multi-Stock Golden Carousel Navigation Styles */
+.golden-nav-arrows {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: 0.25rem;
+}
+
+.golden-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid #fcd34d;
+  background: #fef3c7;
+  color: #78350f;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.golden-nav-btn:hover {
+  background: #fde68a;
+  border-color: #f59e0b;
+  color: #451a03;
+}
+
+.golden-count-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #92400e;
+  padding: 0 0.3rem;
+  white-space: nowrap;
+}
+
+.golden-stock-select {
+  background: #ffffff;
+  border: 1px solid #fcd34d;
+  color: #78350f;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 1px 3px rgba(120, 53, 15, 0.1);
+  transition: border-color 0.15s ease;
+}
+
+.golden-stock-select:hover, .golden-stock-select:focus {
+  border-color: #f59e0b;
+}

@@ -3,14 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Search, Loader2, Sparkles, TrendingUp, Layers } from 'lucide-react'
 
 const SUGGESTED_TICKERS = [
-  { symbol: 'AMZN', name: 'Amazon.com', type: 'US Equity' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc', type: 'US Equity' },
-  { symbol: 'COIN', name: 'Coinbase Global', type: 'US Equity' },
   { symbol: 'AAPL', name: 'Apple Inc', type: 'US Equity' },
   { symbol: 'MSFT', name: 'Microsoft', type: 'US Equity' },
-  { symbol: 'SOL-USD', name: 'Solana', type: 'Crypto' },
-  { symbol: 'GLD', name: 'SPDR Gold Shares', type: 'Commodity' },
+  { symbol: 'AMZN', name: 'Amazon.com', type: 'US Equity' },
+  { symbol: 'GOOGL', name: 'Alphabet Inc', type: 'US Equity' },
+  { symbol: 'NVDA', name: 'NVIDIA Corp', type: 'US Equity' },
+  { symbol: 'TSLA', name: 'Tesla Inc', type: 'US Equity' },
+  { symbol: 'AMD', name: 'Advanced Micro', type: 'US Equity' },
   { symbol: 'PLTR', name: 'Palantir Tech', type: 'US Equity' },
+  { symbol: 'META', name: 'Meta Platforms', type: 'US Equity' },
+  { symbol: 'NFLX', name: 'Netflix Inc', type: 'US Equity' },
+  { symbol: 'AVGO', name: 'Broadcom Inc', type: 'US Equity' },
+  { symbol: 'COIN', name: 'Coinbase Global', type: 'US Equity' },
+  { symbol: 'MSTR', name: 'MicroStrategy', type: 'US Equity' },
+  { symbol: 'QQQ', name: 'Invesco QQQ ETF', type: 'US Equity' },
+  { symbol: 'SPY', name: 'SPDR S&P 500', type: 'US Equity' },
+  { symbol: 'GLD', name: 'SPDR Gold Shares', type: 'Commodity' },
+  { symbol: 'BTC-USD', name: 'Bitcoin', type: 'Crypto' },
+  { symbol: 'SOL-USD', name: 'Solana', type: 'Crypto' },
 ]
 
 export default function AddTickerModal({ isOpen, onClose, onAddTicker, isSubmitting = false }) {
