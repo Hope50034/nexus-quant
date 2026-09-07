@@ -2084,20 +2084,24 @@ function App() {
                                   {/* Technical Readout Footer: OHLC in CANDLE mode */}
                                   <div className="chart-footer-metrics">
                                     {currentTab === 'CANDLE' ? (() => {
+                                      const parseVal = (val, fb) => {
+                                        const n = typeof val === 'number' ? val : parseFloat(val)
+                                        return isNaN(n) ? fb : n
+                                      }
                                       const latestCandle = (candleSeries && candleSeries.length > 0)
                                         ? candleSeries[candleSeries.length - 1]
-                                        : {
-                                            open: displayedPrice * 0.995,
-                                            high: displayedPrice * 1.008,
-                                            low: displayedPrice * 0.992,
-                                            close: displayedPrice
-                                          }
+                                        : {}
+                                      const oVal = parseVal(latestCandle.open ?? latestCandle.OpenPrice, displayedPrice * 0.995)
+                                      const hVal = parseVal(latestCandle.high ?? latestCandle.HighPrice, displayedPrice * 1.008)
+                                      const lVal = parseVal(latestCandle.low ?? latestCandle.LowPrice, displayedPrice * 0.992)
+                                      const cVal = parseVal(latestCandle.close ?? latestCandle.ClosePrice, displayedPrice)
+
                                       return (
                                         <>
-                                          <span>O: ${latestCandle.open.toFixed(2)}</span>
-                                          <span>H: ${latestCandle.high.toFixed(2)}</span>
-                                          <span>L: ${latestCandle.low.toFixed(2)}</span>
-                                          <span>C: ${latestCandle.close.toFixed(2)}</span>
+                                          <span>O: ${oVal.toFixed(2)}</span>
+                                          <span>H: ${hVal.toFixed(2)}</span>
+                                          <span>L: ${lVal.toFixed(2)}</span>
+                                          <span>C: ${cVal.toFixed(2)}</span>
                                         </>
                                       )
                                     })() : (

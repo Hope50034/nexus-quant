@@ -490,33 +490,42 @@ def fetch_recent_candles_for_symbol(symbol: str, limit: int = 30):
     candles = []
     try:
         with connection.cursor() as cursor:
+            # Optimized T-SQL Query for MS SQL Server (NOLOCK read uncommitted + TOP N filter)
             cursor.execute(
                 """
-                SELECT TradeDate, OpenPrice, HighPrice, LowPrice, ClosePrice, Volume, MACD, MACD_Signal
-                FROM MarketPrices
+                SELECT TOP (%s) 
+                    TradeDate, 
+                    ISNULL(OpenPrice, ClosePrice) AS OpenPrice, 
+                    ISNULL(HighPrice, ClosePrice) AS HighPrice, 
+                    ISNULL(LowPrice, ClosePrice) AS LowPrice, 
+                    ISNULL(ClosePrice, 100.0) AS ClosePrice, 
+                    ISNULL(Volume, 0) AS Volume, 
+                    ISNULL(MACD, 0.0) AS MACD, 
+                    ISNULL(MACD_Signal, 0.0) AS MACD_Signal
+                FROM MarketPrices WITH (NOLOCK)
                 WHERE Symbol = %s
                 ORDER BY TradeDate DESC
                 """,
-                [symbol]
+                [limit, symbol]
             )
-            rows = cursor.fetchmany(limit)
+            rows = cursor.fetchall()
 
         for r in reversed(rows):
             d_str = str(r[0])
-            open_p = float(r[1]) if r[1] is not None else float(r[4] or 100)
-            high_p = float(r[2]) if r[2] is not None else float(r[4] or 100)
-            low_p = float(r[3]) if r[3] is not None else float(r[4] or 100)
-            close_p = float(r[4]) if r[4] is not None else 100.0
-            v_vol = int(r[5] or 0)
-            macd_val = float(r[6] or 0)
-            macd_sig = float(r[7] or 0)
+            open_p = float(r[1])
+            high_p = float(r[2])
+            low_p = float(r[3])
+            close_p = float(r[4])
+            v_vol = int(r[5])
+            macd_val = float(r[6])
+            macd_sig = float(r[7])
 
             candles.append({
                 'time': d_str,
                 'date': d_str,
                 'open': round(open_p, 2),
-                'high': round(high_p, 2),
-                'low': round(low_p, 2),
+                'high': round(max(open_p, high_p, close_p), 2),
+                'low': round(min(open_p, low_p, close_p), 2),
                 'close': round(close_p, 2),
                 'price': round(close_p, 2),
                 'volume': v_vol,
