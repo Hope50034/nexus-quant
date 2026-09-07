@@ -560,7 +560,7 @@ class AddAsset(APIView):
                 asset_type = 'Stock'
 
             ticker = yf.Ticker(ticker_symbol)
-            df = ticker.history(period="6mo", interval="1d")
+            df = ticker.history(period="1y", interval="1d")
 
             if df.empty:
                 return Response({'error': f'No market data returned for symbol "{ticker_symbol}".'}, status=status.HTTP_404_NOT_FOUND)
@@ -673,16 +673,16 @@ class CandleDataView(APIView):
             tf = '1d'
 
         tf_map = {
-            '1m': ('1m', '1d'),
-            '5m': ('5m', '5d'),
-            '15m': ('15m', '5d'),
-            '1h': ('60m', '1mo'),
-            '1d': ('1d', '6mo'),
-            '1w': ('1wk', '2y'),
+            '1m': ('1m', '7d'),
+            '5m': ('5m', '60d'),
+            '15m': ('15m', '60d'),
+            '1h': ('60m', '1y'),
+            '1d': ('1d', '1y'),
+            '1w': ('1wk', '5y'),
             '1mo': ('1mo', '5y'),
             '1y': ('1d', '1y')
         }
-        interval, period = tf_map.get(tf, ('1d', '6mo'))
+        interval, period = tf_map.get(tf, ('1d', '1y'))
         is_intraday = tf in ['1m', '5m', '15m', '1h']
 
         rows = []
