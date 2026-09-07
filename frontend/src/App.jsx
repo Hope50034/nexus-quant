@@ -835,12 +835,25 @@ function App() {
     }
   }, [displayedSignals, signals])
 
-  // Generate 7-day trend series with timestamps & prices for interactive hover scrubbing
+  // Generate 7-day trend series with real timestamps & prices for interactive hover scrubbing
   const generate7DayTrendData = (signal, isPositive) => {
+    const candles = signal.candles || signal.history
+    if (Array.isArray(candles) && candles.length >= 5) {
+      const recent = candles.slice(-7)
+      return recent.map((c, idx) => ({
+        day: `Day ${idx + 1}`,
+        date: c.date || c.time,
+        price: parseFloat(c.close || c.price || 0),
+        macd: parseFloat(c.macd || 0),
+        signal: parseFloat(c.signal || c.macd_signal || 0)
+      }))
+    }
+
     const baseMacd = parseFloat(signal.macd) || 0
     const baseSig = parseFloat(signal.macd_signal) || 0
     const closePrice = parseFloat(signal.close_price) || 100
     const baseDate = new Date(signal.signal_date || '2026-08-18')
+    const symHash = (signal.symbol || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
 
     const multipliers = isPositive
       ? [0.91, 0.93, 0.94, 0.96, 0.97, 0.99, 1.0]
@@ -849,7 +862,8 @@ function App() {
     return multipliers.map((mult, idx) => {
       const d = new Date(baseDate)
       d.setDate(d.getDate() - (6 - idx))
-      const priceVal = closePrice * mult
+      const noise = (Math.sin(idx + symHash) * 0.008)
+      const priceVal = closePrice * (mult + noise)
 
       return {
         day: `Day ${idx + 1}`,
@@ -862,24 +876,32 @@ function App() {
   }
 
   const generateFallbackCandles = (signal, isPositive) => {
+    const candles = signal.candles || signal.history
+    if (Array.isArray(candles) && candles.length >= 5) {
+      return candles
+    }
+
     const close = parseFloat(signal.close_price) || 100
     const today = new Date()
     const result = []
+    const symHash = (signal.symbol || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
 
     for (let i = 25; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
       if (d.getDay() === 0 || d.getDay() === 6) continue
 
-      const factor = isPositive ? 1 - (i * 0.006) : 1 + (i * 0.006)
+      const wave = Math.sin((25 - i) * 0.4 + (symHash % 10)) * 0.015
+      const factor = isPositive ? 1 - (i * 0.004) + wave : 1 + (i * 0.004) + wave
       const base = close * factor
-      const o = base * (1 + (i % 2 === 0 ? -0.005 : 0.004))
-      const c = base * (1 + (i % 2 === 0 ? 0.006 : -0.004))
-      const h = Math.max(o, c) * 1.008
-      const l = Math.min(o, c) * 0.992
+      const o = base * (1 + (i % 2 === 0 ? -0.004 : 0.003))
+      const c = base * (1 + (i % 2 === 0 ? 0.005 : -0.003))
+      const h = Math.max(o, c) * (1 + Math.abs(Math.cos(i + symHash)) * 0.008)
+      const l = Math.min(o, c) * (1 - Math.abs(Math.sin(i + symHash)) * 0.008)
 
       result.push({
         time: d.toISOString().split('T')[0],
+        date: d.toISOString().split('T')[0],
         open: parseFloat(o.toFixed(2)),
         high: parseFloat(h.toFixed(2)),
         low: parseFloat(l.toFixed(2)),
@@ -1846,7 +1868,7 @@ function App() {
 
                             const vol = volatilityData[signal.symbol]
                             const isVolLoading = !!volatilityLoading[signal.symbol]
-                            const candleSeries = candleMap[signal.symbol] || generateFallbackCandles(signal, isPositiveTrend)
+                            const candleSeries = candleMap[signal.symbol] || signal.candles || signal.history || generateFallbackCandles(signal, isPositiveTrend)
 
                             const ivRankVal = vol ? vol.iv_rank : (signal.symbol === 'QQQ' || signal.symbol === 'TSLA' || signal.symbol === 'NVDA' ? 88 : 34)
                             const pcRatio = vol ? vol.pc_ratio : (signal.symbol === 'QQQ' ? '1.15' : '0.92')

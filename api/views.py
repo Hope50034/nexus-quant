@@ -485,6 +485,50 @@ def compute_golden_opportunity_meta(symbol, price, macd, macd_sig, radar):
     }
 
 
+def fetch_recent_candles_for_symbol(symbol: str, limit: int = 30):
+    symbol = symbol.strip().upper()
+    candles = []
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT TradeDate, OpenPrice, HighPrice, LowPrice, ClosePrice, Volume, MACD, MACD_Signal
+                FROM MarketPrices
+                WHERE Symbol = %s
+                ORDER BY TradeDate DESC
+                """,
+                [symbol]
+            )
+            rows = cursor.fetchmany(limit)
+
+        for r in reversed(rows):
+            d_str = str(r[0])
+            open_p = float(r[1]) if r[1] is not None else float(r[4] or 100)
+            high_p = float(r[2]) if r[2] is not None else float(r[4] or 100)
+            low_p = float(r[3]) if r[3] is not None else float(r[4] or 100)
+            close_p = float(r[4]) if r[4] is not None else 100.0
+            v_vol = int(r[5] or 0)
+            macd_val = float(r[6] or 0)
+            macd_sig = float(r[7] or 0)
+
+            candles.append({
+                'time': d_str,
+                'date': d_str,
+                'open': round(open_p, 2),
+                'high': round(high_p, 2),
+                'low': round(low_p, 2),
+                'close': round(close_p, 2),
+                'price': round(close_p, 2),
+                'volume': v_vol,
+                'macd': round(macd_val, 4),
+                'signal': round(macd_sig, 4)
+            })
+    except Exception as e:
+        print(f"Error fetching candles for {symbol}: {e}")
+
+    return candles
+
+
 def format_signal_with_live_data(signal):
     close_p = float(signal.close_price)
     live_q = fetch_live_quote_data(signal.symbol, close_p)
@@ -492,6 +536,7 @@ def format_signal_with_live_data(signal):
     macd_val = float(signal.macd)
     macd_sig = float(signal.macd_signal)
     golden_meta = compute_golden_opportunity_meta(signal.symbol, live_q['current_price'], macd_val, macd_sig, radar)
+    candles = fetch_recent_candles_for_symbol(signal.symbol, limit=30)
 
     return {
         'symbol': signal.symbol,
@@ -508,8 +553,11 @@ def format_signal_with_live_data(signal):
         'macd': macd_val,
         'macd_signal': macd_sig,
         'radar': radar,
-        'golden_opportunity': golden_meta
+        'golden_opportunity': golden_meta,
+        'candles': candles,
+        'history': candles
     }
+
 
 
 
