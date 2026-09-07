@@ -7,7 +7,11 @@ from .views import (
     AddAsset,
     VolatilityDataViewSet,
     CandleDataView,
-    TriggerIngest
+    TriggerIngest,
+    SentimentDataView,
+    OrderbookDataView,
+    PortfolioOptimizerView,
+    PaperTradingView
 )
 
 router = DefaultRouter()
@@ -23,4 +27,8 @@ urlpatterns = [
     path('trigger-ingest/', TriggerIngest.as_view(), name='trigger-ingest'),
     path('candles/', CandleDataView.as_view(), name='candles-list'),
     path('candles/<str:symbol>/', CandleDataView.as_view(), name='candles-detail'),
+    path('sentiment/', SentimentDataView.as_view(), name='sentiment-data'),
+    path('orderbook/', OrderbookDataView.as_view(), name='orderbook-data'),
+    path('portfolio-optimizer/', PortfolioOptimizerView.as_view(), name='portfolio-optimizer'),
+    path('paper-trading/', PaperTradingView.as_view(), name='paper-trading'),
 ]

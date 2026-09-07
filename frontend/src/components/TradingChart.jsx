@@ -20,10 +20,12 @@ export function formatCandleData(rawData = []) {
       dateStr = new Date().toISOString().split('T')[0]
     }
 
-    const open = parseFloat(item.open ?? item.OpenPrice ?? item.Open ?? item.close_price ?? 0)
-    const high = parseFloat(item.high ?? item.HighPrice ?? item.High ?? item.close_price ?? 0)
-    const low = parseFloat(item.low ?? item.LowPrice ?? item.Low ?? item.close_price ?? 0)
-    const close = parseFloat(item.close ?? item.ClosePrice ?? item.Close ?? item.close_price ?? 0)
+    const parseNum = (val) => parseFloat(String(val ?? 0).replace(/[^0-9.-]/g, '')) || 0
+    const open = parseNum(item.open ?? item.OpenPrice ?? item.Open ?? item.close_price)
+    const high = parseNum(item.high ?? item.HighPrice ?? item.High ?? item.close_price)
+    const low = parseNum(item.low ?? item.LowPrice ?? item.Low ?? item.close_price)
+    const close = parseNum(item.close ?? item.ClosePrice ?? item.Close ?? item.close_price)
+
 
     return {
       time: dateStr,

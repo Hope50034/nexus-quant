@@ -17,9 +17,17 @@ import {
   AlertOctagon,
   Clock,
   BarChart3,
-  Bell,
-  Maximize2
+  Maximize2,
+  Sliders,
+  FileText,
+  Bell
 } from 'lucide-react'
+import { getRiskRatingMeta } from '../utils/riskUtils'
+
+
+
+
+
 
 
 // Helper: Calculate 20-period EMA for candle close prices
@@ -88,7 +96,10 @@ function generateFallbackCandles(symbol, closePrice) {
   })
 }
 
-export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpenBacktest, onOpenAlerts, onOpenFullChart }) {
+export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpenBacktest, onOpenAlerts, onOpenFullChart, onOpenOptions, onOpenReport, API_BASE_URL = 'http://127.0.0.1:8000' }) {
+
+
+
 
 
   // 1. Timeframe State Management (default '1D')
@@ -114,7 +125,28 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
   const symbol = asset?.symbol || 'QQQ'
   const closePrice = parseFloat(asset?.close_price) || 100
   const vol = volatilityData?.[symbol]
-  const timeframes = ['1D', '1W', '1M', '1Y', 'ALL']
+  const timeframes = ['1m', '5m', '15m', '1h', '1D', '1W', '1M', '1Y']
+  const [intradayCandles, setIntradayCandles] = useState([])
+
+  // Fetch timeframe candle series
+  useEffect(() => {
+    if (!asset || !symbol) return
+    const tf = selectedTimeframe.toLowerCase()
+    
+    const fetchTfCandles = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL || 'http://127.0.0.1:8000'}/api/candles/${symbol}/?tf=${tf}`)
+        if (response.ok) {
+          const data = await response.json()
+          setIntradayCandles(data)
+        }
+      } catch (err) {
+        console.error(`Error fetching ${tf} candles:`, err)
+      }
+    }
+    
+    fetchTfCandles()
+  }, [symbol, selectedTimeframe, API_BASE_URL])
 
   // 5. Full Candle Series Memoization (UNCONDITIONAL HOOK)
   const fullCandles = useMemo(() => {
@@ -130,17 +162,18 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
 
   // 6. Timeframe Sliced Dataset Memoization (UNCONDITIONAL HOOK)
   const slicedCandles = useMemo(() => {
+    if (intradayCandles && intradayCandles.length > 0) return intradayCandles
     if (!asset || fullCandles.length === 0) return []
     const sliceCounts = {
       '1D': 24,
       '1W': 7,
       '1M': 30,
-      '1Y': 252,
-      'ALL': fullCandles.length
+      '1Y': 252
     }
     const count = sliceCounts[selectedTimeframe] || 24
     return fullCandles.slice(-Math.min(count, fullCandles.length))
-  }, [asset, fullCandles, selectedTimeframe])
+  }, [asset, fullCandles, intradayCandles, selectedTimeframe])
+
 
   // 7. TradingView Series & Metric Calculations (UNCONDITIONAL HOOK)
   const chartData = useMemo(() => {
@@ -391,6 +424,7 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
   }
 
   const companyName = companyNames[symbol] || `${symbol} Asset`
+  const sheetRiskMeta = getRiskRatingMeta(symbol, asset.asset_type)
 
   return (
     <AnimatePresence>
@@ -424,10 +458,17 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
                   <div className="title-row">
                     <h2 className="sheet-ticker">{symbol}</h2>
                     <span className="sheet-capsule-badge">{asset.asset_type || 'US Equity'}</span>
+                    
+                    {/* Risk Rating Badge (1-5 Scale) */}
+                    <span className={`risk-badge-pill ${sheetRiskMeta.badgeClass}`} title={`${sheetRiskMeta.label}: ${sheetRiskMeta.description}`}>
+                      <span className="risk-icon">{sheetRiskMeta.icon}</span>
+                      <span className="risk-text">{sheetRiskMeta.shortLabel}</span>
+                    </span>
                   </div>
                   <span className="sheet-company">{companyName}</span>
                 </div>
               </div>
+
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
@@ -450,6 +491,24 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
                 </button>
                 <button
                   className="sync-now-btn"
+                  onClick={() => onOpenOptions?.(symbol)}
+                  title="Open 0DTE Options Payoff & Greeks Visualizer"
+                  style={{ padding: '0.3rem 0.65rem', fontSize: '0.725rem' }}
+                >
+                  <Sliders size={13} />
+                  <span>Options</span>
+                </button>
+                <button
+                  className="sync-now-btn"
+                  onClick={() => onOpenReport?.(symbol)}
+                  title="Export AI Quantitative Trade Brief Report"
+                  style={{ padding: '0.3rem 0.65rem', fontSize: '0.725rem' }}
+                >
+                  <FileText size={13} />
+                  <span>Export Brief</span>
+                </button>
+                <button
+                  className="sync-now-btn"
                   onClick={() => onOpenBacktest?.(symbol)}
                   title="Run Backtest Simulation on historical candles"
                   style={{ padding: '0.3rem 0.65rem', fontSize: '0.725rem' }}
@@ -457,6 +516,8 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
                   <BarChart3 size={14} />
                   <span>Backtest</span>
                 </button>
+
+
                 <button className="sheet-close-btn" onClick={onClose} title="Close (ESC)">
                   <X size={18} />
                 </button>

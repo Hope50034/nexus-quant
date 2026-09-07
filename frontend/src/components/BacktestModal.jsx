@@ -76,31 +76,37 @@ export default function BacktestModal({
     const startDate = new Date(today)
     startDate.setDate(startDate.getDate() - numDays)
 
-    // Fallback price seeds per asset class
+    // Fallback price seeds per asset class (Synchronized with live market baselines)
     const priceSeeds = {
-      'BTC-USD': 64500,
-      'NVDA': 210,
-      'QQQ': 510,
-      'SPY': 590,
-      'TSLA': 220,
-      'AMD': 165,
-      'META': 530,
-      'AAPL': 225,
-      'MSFT': 430,
-      'AMZN': 185,
-      'GOOGL': 175,
-      'SOL-USD': 145,
-      'ETH-USD': 2650,
-      'USO': 75,
-      'GLD': 235,
-      'PLTR': 32
+      'BTC-USD': 96420,
+      'NVDA': 219.74,
+      'QQQ': 485.30,
+      'SPY': 560.10,
+      'TSLA': 242.80,
+      'AMD': 155.60,
+      'META': 522.40,
+      'AAPL': 224.30,
+      'MSFT': 448.90,
+      'AMZN': 185.00,
+      'GOOGL': 175.00,
+      'SOL-USD': 188.40,
+      'ETH-USD': 3850.25,
+      'USO': 78.20,
+      'GLD': 240.50,
+      'PLTR': 32.50
     }
 
     // Try finding exact live close price from signals list for any stock
     const currentSignal = (signals || []).find(s => (s.symbol || '').toUpperCase() === (symbol || '').toUpperCase())
-    const activeClosePrice = currentSignal ? parseFloat(currentSignal.close_price) : null
+    let activeClosePrice = null
+    if (currentSignal) {
+      const rawPriceStr = String(currentSignal.current_price || currentSignal.close_price || '').replace('$', '').replace(',', '').trim()
+      activeClosePrice = parseFloat(rawPriceStr) || null
+    }
+
     const startPrice = activeClosePrice || priceSeeds[symbol] || 150
     let currentPrice = startPrice
+
 
     // Simulate price trajectory with volatility & trend bias per strategy
     const priceSeries = []

@@ -48,8 +48,8 @@ export default function FullChartModal({
   const chartContainerRef = useRef(null)
   const chartInstanceRef = useRef(null)
 
-  // Top Header Controls State
-  const [timeframe, setTimeframe] = useState('1M')
+  // Top Header Controls State (Timeframes: 1m, 5m, 15m, 1h, 1D, 1W, 1M, 1Y)
+  const [timeframe, setTimeframe] = useState('1D')
   const [chartType, setChartType] = useState('CANDLE') // 'CANDLE' | 'AREA' | 'LINE'
   const [showEma20, setShowEma20] = useState(true)
   const [showEma50, setShowEma50] = useState(true)
@@ -65,17 +65,15 @@ export default function FullChartModal({
   const symbol = (asset?.symbol || 'QQQ').toUpperCase()
   const assetType = asset?.asset_type || 'Stock'
 
-  // Fetch candle data if candleData prop is empty
+  // Fetch candle data whenever timeframe or symbol changes
   useEffect(() => {
-    if (!isOpen || (candleData && candleData.length > 0)) {
-      setFetchedCandles(candleData || [])
-      return
-    }
+    if (!isOpen) return
 
     const fetchCandles = async () => {
       setIsLoading(true)
       try {
-        const response = await fetch(`${API_BASE_URL || 'http://127.0.0.1:8000'}/api/candles/${symbol}/`)
+        const tfParam = timeframe.toLowerCase()
+        const response = await fetch(`${API_BASE_URL || 'http://127.0.0.1:8000'}/api/candles/${symbol}/?tf=${tfParam}`)
         if (response.ok) {
           const data = await response.json()
           setFetchedCandles(data)
@@ -88,8 +86,10 @@ export default function FullChartModal({
     }
 
     fetchCandles()
-  }, [isOpen, symbol, candleData, API_BASE_URL])
+  }, [isOpen, symbol, timeframe, API_BASE_URL])
 
+
+  // Process and filter candles based on timeframe
   // Process and filter candles based on timeframe
   const activeCandles = useMemo(() => {
     const raw = fetchedCandles.length > 0 ? fetchedCandles : (candleData || [])
@@ -119,13 +119,14 @@ export default function FullChartModal({
     }
 
     const deduped = deduplicateCandles(raw)
-
-    if (timeframe === '1D') return deduped.slice(-5)
-    if (timeframe === '1W') return deduped.slice(-7)
-    if (timeframe === '1M') return deduped.slice(-30)
-    if (timeframe === '1Y') return deduped.slice(-252)
-    return deduped // 'ALL' (Full 1-year historical dataset)
-  }, [fetchedCandles, candleData, timeframe, asset])
+    // Sort strictly by ascending time order
+    return deduped.sort((a, b) => {
+      if (typeof a.time === 'number' && typeof b.time === 'number') {
+        return a.time - b.time
+      }
+      return String(a.time).localeCompare(String(b.time))
+    })
+  }, [fetchedCandles, candleData, asset])
 
 
   // ESC Key Listener
@@ -164,7 +165,7 @@ export default function FullChartModal({
       },
       rightPriceScale: {
         borderColor: '#e2e8f0',
-        scaleMargins: { top: 0.1, bottom: 0.25 },
+        scaleMargins: { top: 0.08, bottom: 0.22 },
       },
       timeScale: {
         borderColor: '#e2e8f0',
@@ -231,7 +232,9 @@ export default function FullChartModal({
         color: '#cbd5e1',
         priceFormat: { type: 'volume' },
         priceScaleId: '',
-        scaleMargins: { top: 0.75, bottom: 0 },
+        lastValueVisible: false,
+        priceLineVisible: false,
+        scaleMargins: { top: 0.78, bottom: 0 },
       })
 
       const volumeData = activeCandles.map(c => ({
@@ -249,12 +252,20 @@ export default function FullChartModal({
         return
       }
 
-      const candle = activeCandles.find(c => c.time === param.time)
+      const candle = activeCandles.find(c => String(c.time) === String(param.time))
       if (candle) {
         const change = candle.close - candle.open
         const pct = candle.open > 0 ? (change / candle.open) * 100 : 0
+        
+        let dateFormatted = String(candle.time)
+        if (typeof candle.time === 'number') {
+          dateFormatted = new Date(candle.time * 1000).toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          })
+        }
+
         setHudData({
-          date: candle.time,
+          date: dateFormatted,
           open: candle.open,
           high: candle.high,
           low: candle.low,
@@ -337,7 +348,7 @@ export default function FullChartModal({
                 <div className="fullchart-controls-group">
                   {/* Timeframe Selector */}
                   <div className="ctrl-pill-group">
-                    {['1D', '1W', '1M', '1Y', 'ALL'].map(tf => (
+                    {['1m', '5m', '15m', '1h', '1D', '1W', '1M', '1Y'].map(tf => (
                       <button
                         key={tf}
                         className={`ctrl-pill ${timeframe === tf ? 'active' : ''}`}
@@ -347,6 +358,7 @@ export default function FullChartModal({
                       </button>
                     ))}
                   </div>
+
 
                   {/* Chart Type Toggle */}
                   <div className="ctrl-pill-group">

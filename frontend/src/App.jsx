@@ -40,11 +40,23 @@ import {
   LayoutGrid,
   Scale,
   Bell,
-  Maximize2
+  Maximize2,
+  Sliders,
+  Dices,
+  Newspaper,
+  FileText,
+  Star,
+  GraduationCap,
+  Globe
 } from 'lucide-react'
 
 
+
+
+
+
 import './App.css'
+import { translations } from './i18n/translations'
 import TradingChart from './components/TradingChart'
 import CommandMenu from './components/CommandMenu'
 import AssetDetailSheet from './components/AssetDetailSheet'
@@ -56,6 +68,26 @@ import BacktestModal from './components/BacktestModal'
 import CorrelationMatrixModal from './components/CorrelationMatrixModal'
 import AlertRulesModal from './components/AlertRulesModal'
 import FullChartModal from './components/FullChartModal'
+import OptionsPayoffModal from './components/OptionsPayoffModal'
+import PortfolioSimulatorModal from './components/PortfolioSimulatorModal'
+import MarketSentimentBar from './components/MarketSentimentBar'
+import NewsSentimentModal from './components/NewsSentimentModal'
+import OrderbookModal from './components/OrderbookModal'
+import PortfolioOptimizerModal from './components/PortfolioOptimizerModal'
+import TradingAcademyModal from './components/TradingAcademyModal'
+import DailyTradePlaybook from './components/DailyTradePlaybook'
+import { getRiskRatingMeta } from './utils/riskUtils'
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -126,6 +158,67 @@ function App() {
 
   // Full-Screen Interactive Chart Modal State
   const [fullChartAsset, setFullChartAsset] = useState(null)
+
+  // 0DTE Options Payoff & Greeks Visualizer Modal State
+  const [isOptionsPayoffOpen, setIsOptionsPayoffOpen] = useState(false)
+
+  // Monte Carlo Portfolio Risk Simulator Modal State
+  const [isMonteCarloOpen, setIsMonteCarloOpen] = useState(false)
+
+  // Live Financial News & Sentiment Modal State
+  const [isSentimentOpen, setIsSentimentOpen] = useState(false)
+
+  // Quant Tools Popover Dropdown Menu State
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false)
+  const toolsDropdownRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(e.target)) {
+        setIsToolsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // AI Quantitative Trade Brief & Report Generator Modal State
+  const [isReportOpen, setIsReportOpen] = useState(false)
+  const [reportSymbol, setReportSymbol] = useState('NVDA')
+
+  // Live L2/L3 Orderbook & Market Depth Modal State
+  const [isOrderbookOpen, setIsOrderbookOpen] = useState(false)
+  const [orderbookSymbol, setOrderbookSymbol] = useState('NVDA')
+
+  // Markowitz Efficient Frontier & Portfolio Optimizer Modal State
+  const [isPortfolioOptimizerOpen, setIsPortfolioOptimizerOpen] = useState(false)
+
+  // Virtual Paper Trading & Practice Execution Desk State
+  const [isPaperTradingOpen, setIsPaperTradingOpen] = useState(false)
+
+  // Beginner Trader Academy & Signal Explainer State
+  const [isAcademyOpen, setIsAcademyOpen] = useState(false)
+  const [academySignal, setAcademySignal] = useState(null)
+
+  // Bilingual English/Thai (EN/TH) i18n State
+  const [lang, setLang] = useState(() => localStorage.getItem('kappa_lang') || 'en')
+  const toggleLanguage = () => {
+    const nextLang = lang === 'en' ? 'th' : 'en'
+    setLang(nextLang)
+    localStorage.setItem('kappa_lang', nextLang)
+  }
+  const t = translations[lang] || translations.en
+
+
+
+
+
+
+
+
+
+
+
 
 
   // Algorithmic Alert Rules & Live Breach Detection Engine State
@@ -256,18 +349,9 @@ function App() {
 
 
 
-  // Slide-Over Inspection Sheet Selected Asset State (Selected Ticker string for reactive live lookup)
-  const [selectedTicker, setSelectedTicker] = useState(null)
-
-  // Reactive Active Asset Lookup (Guarantees slide-over sheet ticks live with global market polling)
-  const activeAsset = useMemo(() => {
-    if (!selectedTicker) return null
-    return signals.find(s => (s.symbol || '').toUpperCase() === selectedTicker.toUpperCase()) || null
-  }, [signals, selectedTicker])
-
-
   // Active View Mode State: 'grid' or 'heatmap'
   const [activeView, setActiveView] = useState('grid')
+
 
   // Live Real-Time Polling & Ingestion Sync State
   const [isLivePolling, setIsLivePolling] = useState(true)
@@ -302,6 +386,31 @@ function App() {
   const [aiOutput, setAiOutput] = useState('')
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
+
+  // Favorite Tickers State (Persisted in localStorage)
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kappa_favorites')
+      return saved ? JSON.parse(saved) : ['BTC-USD', 'NVDA']
+    } catch (e) {
+      return ['BTC-USD', 'NVDA']
+    }
+  })
+
+  // Toggle Favorite Star
+  const toggleFavorite = (symbol) => {
+    if (!symbol) return
+    const sym = symbol.toUpperCase().trim()
+    setFavorites(prev => {
+      const isFav = prev.includes(sym)
+      const next = isFav ? prev.filter(s => s !== sym) : [...prev, sym]
+      try {
+        localStorage.setItem('kappa_favorites', JSON.stringify(next))
+      } catch (e) {}
+      return next
+    })
+  }
+
 
   // Global Keyboard Shortcut Listener for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
   useEffect(() => {
@@ -413,6 +522,47 @@ function App() {
       setVolatilityLoading(prev => ({ ...prev, [uppercaseSymbol]: false }))
     }
   }
+
+  // Slide-Over Inspection Sheet Selected Asset State (Selected Ticker string for reactive live lookup)
+  const [selectedTicker, setSelectedTicker] = useState(null)
+
+  // Auto-fetch candle & volatility data whenever a stock is selected
+  useEffect(() => {
+    if (selectedTicker) {
+      const sym = selectedTicker.toUpperCase().trim()
+      fetchCandleData(sym)
+      fetchVolatilityData(sym)
+    }
+  }, [selectedTicker])
+
+  // Reactive Active Asset Lookup (Guarantees slide-over sheet ticks live with global market polling)
+  const activeAsset = useMemo(() => {
+    if (!selectedTicker) return null
+    const uppercaseSym = selectedTicker.toUpperCase().trim()
+    const found = signals.find(s => (s.symbol || '').toUpperCase() === uppercaseSym)
+    
+    if (found) {
+      return {
+        ...found,
+        history: candleMap[uppercaseSym] || found.history || found.price_history
+      }
+    }
+
+    return {
+      symbol: uppercaseSym,
+      current_price: '150.00',
+      close_price: '150.00',
+      previous_close: '148.50',
+      percent_change: '+1.01%',
+      daily_change_pct: '+1.01%',
+      asset_type: uppercaseSym.includes('USD') ? 'Crypto' : (['GLD', 'USO'].includes(uppercaseSym) ? 'Commodity' : 'Stock'),
+      signal_trigger_date: new Date().toISOString().split('T')[0],
+      macd: '1.25',
+      macd_signal: '0.98',
+      history: candleMap[uppercaseSym] || []
+    }
+  }, [signals, selectedTicker, candleMap])
+
 
   const handleAddAsset = async (symbol, assetClass = 'US Equity') => {
     const trimmed = (typeof symbol === 'string' ? symbol : newTickerInput).trim().toUpperCase()
@@ -582,16 +732,20 @@ function App() {
     return () => clearInterval(interval)
   }, [isLivePolling, signalType])
 
-  const categories = ['ALL', 'Crypto', 'Stock', 'Commodity']
+  const categories = ['ALL', 'Favorites', 'Crypto', 'Stock', 'Commodity']
 
   const displayedSignals = useMemo(() => {
     return signals
       .filter(s => {
-        const symbolStr = (s.symbol || '').toLowerCase()
+        const symbolStr = (s.symbol || '').toUpperCase()
         const assetStr = (s.asset_type || '').toLowerCase()
         const queryStr = searchQuery.toLowerCase().trim()
 
-        const matchesSearch = !queryStr || symbolStr.includes(queryStr) || assetStr.includes(queryStr)
+        const matchesSearch = !queryStr || symbolStr.toLowerCase().includes(queryStr) || assetStr.includes(queryStr)
+
+        if (activeFilter === 'Favorites') {
+          return matchesSearch && favorites.includes(symbolStr)
+        }
 
         const filterStr = activeFilter.toLowerCase()
         const matchesFilter =
@@ -604,6 +758,15 @@ function App() {
         return matchesSearch && matchesFilter
       })
       .sort((a, b) => {
+        const symA = (a.symbol || '').toUpperCase()
+        const symB = (b.symbol || '').toUpperCase()
+        const isFavA = favorites.includes(symA)
+        const isFavB = favorites.includes(symB)
+
+        // Favorited assets ALWAYS pin to top of screen first
+        if (isFavA && !isFavB) return -1
+        if (!isFavA && isFavB) return 1
+
         const valA = parseFloat(a.close_price) || 0
         const valB = parseFloat(b.close_price) || 0
         const macdA = Math.abs(parseFloat(a.macd) || 0)
@@ -617,7 +780,7 @@ function App() {
             return dateA - dateB
           case 'Symbol':
           case 'symbol':
-            return (a.symbol || '').localeCompare(b.symbol || '')
+            return symA.localeCompare(symB)
           case 'Highest Price':
           case 'price-desc':
             return valB - valA
@@ -630,7 +793,8 @@ function App() {
             return dateB - dateA
         }
       })
-  }, [signals, searchQuery, activeFilter, sortOrder])
+  }, [signals, searchQuery, activeFilter, sortOrder, favorites])
+
 
   const kpiData = useMemo(() => {
     const list = displayedSignals.length > 0 ? displayedSignals : signals
@@ -799,13 +963,22 @@ function App() {
         asset={activeAsset}
         onClose={() => setSelectedTicker(null)}
         volatilityData={volatilityData}
+        API_BASE_URL={API_BASE_URL}
         onOpenBacktest={(sym) => {
           setBacktestSymbol(sym)
           setIsBacktestOpen(true)
         }}
         onOpenAlerts={() => setIsAlertsOpen(true)}
         onOpenFullChart={(ast) => setFullChartAsset(ast)}
+        onOpenOptions={() => setIsOptionsPayoffOpen(true)}
+        onOpenReport={(sym) => {
+          setReportSymbol(sym)
+          setIsReportOpen(true)
+        }}
       />
+
+
+
 
 
 
@@ -845,6 +1018,60 @@ function App() {
         candleData={fullChartAsset ? (candleMap[fullChartAsset.symbol] || []) : []}
         API_BASE_URL={API_BASE_URL}
       />
+
+      {/* 0DTE Options Payoff & Black-Scholes Greeks Engine Modal */}
+      <OptionsPayoffModal
+        isOpen={isOptionsPayoffOpen}
+        onClose={() => setIsOptionsPayoffOpen(false)}
+        signals={signals}
+      />
+
+      {/* Monte Carlo Portfolio Risk & VaR Simulator Modal */}
+      <PortfolioSimulatorModal
+        isOpen={isMonteCarloOpen}
+        onClose={() => setIsMonteCarloOpen(false)}
+        signals={signals}
+      />
+
+      {/* Live Financial News & NLP Sentiment Inspection Modal */}
+      <NewsSentimentModal
+        isOpen={isSentimentOpen}
+        onClose={() => setIsSentimentOpen(false)}
+        API_BASE_URL={API_BASE_URL}
+      />
+
+      {/* Live L2/L3 Orderbook & Cumulative Market Depth Modal */}
+      <OrderbookModal
+        isOpen={isOrderbookOpen}
+        onClose={() => setIsOrderbookOpen(false)}
+        initialSymbol={orderbookSymbol}
+        API_BASE_URL={API_BASE_URL}
+      />
+
+      {/* Markowitz Efficient Frontier & Portfolio Optimizer Modal */}
+      <PortfolioOptimizerModal
+        isOpen={isPortfolioOptimizerOpen}
+        onClose={() => setIsPortfolioOptimizerOpen(false)}
+        API_BASE_URL={API_BASE_URL}
+      />
+
+
+      {/* Beginner Trader Academy & Signal Explainer Modal */}
+      <TradingAcademyModal
+        isOpen={isAcademyOpen}
+        onClose={() => setIsAcademyOpen(false)}
+        signal={academySignal}
+        lang={lang}
+      />
+
+
+
+
+
+
+
+
+
 
 
       {/* Top-Right Floating Toast Breach Stack */}
@@ -970,45 +1197,156 @@ function App() {
             style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' }}
           >
             <Plus size={13} />
-            <span>+ Ticker</span>
+            <span>{t.addTicker}</span>
           </button>
 
-          {/* Algorithmic Strategy Backtester Modal Trigger */}
+          {/* Bilingual English / Thai Language Switcher Toggle */}
           <button
-            className="sync-now-btn"
-            onClick={() => {
-              setBacktestSymbol('BTC-USD')
-              setIsBacktestOpen(true)
-            }}
-            title="Run Algorithmic Strategy Backtest Simulator"
-            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#e2e8f0' }}
+            className="sync-now-btn font-mono"
+            onClick={toggleLanguage}
+            title={lang === 'en' ? 'Switch to Thai (เปลี่ยนเป็นภาษาไทย)' : 'Switch to English'}
+            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1', fontWeight: 800 }}
           >
-            <BarChart3 size={13} />
-            <span>Backtest</span>
+            <Globe size={13} style={{ color: '#0284c7' }} />
+            <span>{lang === 'en' ? '🇺🇸 EN | TH 🇹🇭' : '🇹🇭 TH | EN 🇺🇸'}</span>
           </button>
 
-          {/* Cross-Asset Correlation & Risk Matrix Trigger */}
-          <button
-            className="sync-now-btn"
-            onClick={() => setIsCorrelationOpen(true)}
-            title="Open Cross-Asset Correlation & Risk Matrix"
-            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#e2e8f0' }}
-          >
-            <Scale size={13} />
-            <span>Risk Matrix</span>
-          </button>
 
-          {/* Algorithmic Alert Rules Engine Trigger */}
-          <button
-            className="sync-now-btn"
-            onClick={() => setIsAlertsOpen(true)}
-            title="Configure Algorithmic Live Alert Rules"
-            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#e2e8f0' }}
-          >
-            <Bell size={13} />
-            <span>Alerts</span>
-            {activeAlertCount > 0 && <span className="alert-counter-badge">{activeAlertCount}</span>}
-          </button>
+
+          {/* Institutional Quant Tools Dropdown Popover */}
+          <div className="quant-tools-dropdown-container" ref={toolsDropdownRef}>
+            <button
+              className="quant-tools-trigger-btn font-mono"
+              onClick={() => setIsToolsDropdownOpen(prev => !prev)}
+              // Clean Real Live Market Quantitative Platform - Streamlined Suite
+              title="Open Quantitative Workstation Tools & Simulators Menu"
+            >
+              <Sliders size={13} style={{ color: '#0284c7' }} />
+              <span>Quant Tools</span>
+              <ChevronDown size={12} className={`dropdown-arrow ${isToolsDropdownOpen ? 'open' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {isToolsDropdownOpen && (
+                <motion.div
+                  className="quant-tools-popover font-mono"
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <div className="popover-header">
+                    <span>QUANTITATIVE WORKSTATION SUITE</span>
+                  </div>
+
+                  <div className="popover-grid">
+                    <button className="popover-item" onClick={() => { setBacktestSymbol('BTC-USD'); setIsBacktestOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#f0f9ff', color: '#0284c7' }}>
+                        <BarChart3 size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">Strategy Backtester</span>
+                        <span className="item-desc">Historical signal simulation</span>
+                      </div>
+                    </button>
+
+                    <button className="popover-item" onClick={() => { setIsCorrelationOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#fdf4ff', color: '#c026d3' }}>
+                        <Scale size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">Cross-Asset Risk Matrix</span>
+                        <span className="item-desc">Pearson correlation heatmap</span>
+                      </div>
+                    </button>
+
+                    <button className="popover-item" onClick={() => { setIsAlertsOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#fefce8', color: '#ca8a04' }}>
+                        <Bell size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">Algorithmic Alerts</span>
+                        <span className="item-desc">Live triggers & webhooks</span>
+                      </div>
+                      {activeAlertCount > 0 && <span className="item-badge">{activeAlertCount}</span>}
+                    </button>
+
+                    <button className="popover-item" onClick={() => { setIsOptionsPayoffOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#ecfdf5', color: '#059669' }}>
+                        <Sliders size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">0DTE Options Payoff</span>
+                        <span className="item-desc">Black-Scholes Greeks engine</span>
+                      </div>
+                    </button>
+
+                    <button className="popover-item" onClick={() => { setIsMonteCarloOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#faf5ff', color: '#9333ea' }}>
+                        <Dices size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">Monte Carlo Risk Simulator</span>
+                        <span className="item-desc">1,000 path Brownian motion</span>
+                      </div>
+                    </button>
+
+                    <button className="popover-item" onClick={() => { setIsSentimentOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#eff6ff', color: '#2563eb' }}>
+                        <Newspaper size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">Live News & Sentiment</span>
+                        <span className="item-desc">NLP Fear & Greed Breakdown</span>
+                      </div>
+                    </button>
+
+                    <button className="popover-item" onClick={() => { setOrderbookSymbol('NVDA'); setIsOrderbookOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#ecfdf5', color: '#047857' }}>
+                        <Layers size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">L2 Orderbook & Depth</span>
+                        <span className="item-desc">Real-time bid/ask liquidity curve</span>
+                      </div>
+                    </button>
+
+                    <button className="popover-item" onClick={() => { setIsPortfolioOptimizerOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#faf5ff', color: '#9333ea' }}>
+                        <PieChart size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">Portfolio Optimizer</span>
+                        <span className="item-desc">Markowitz Efficient Frontier</span>
+                      </div>
+                    </button>
+
+
+
+                    <button className="popover-item" onClick={() => { setAcademySignal(displayedSignals[0] || null); setIsAcademyOpen(true); setIsToolsDropdownOpen(false); }}>
+                      <div className="item-icon-wrapper" style={{ background: '#f0f9ff', color: '#0284c7' }}>
+                        <GraduationCap size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">Trader Academy & Signals</span>
+                        <span className="item-desc">Plain-English signal guide & rules</span>
+                      </div>
+                    </button>
+
+
+
+
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+
+
+
+
+
 
 
 
@@ -1056,6 +1394,26 @@ function App() {
           </button>
         </div>
       </header>
+
+      {/* Live Financial News */}
+      <MarketSentimentBar
+        onOpenModal={() => setIsSentimentOpen(true)}
+        API_BASE_URL={API_BASE_URL}
+      />
+
+      {/* Live Actionable Trade & Investment Playbook Banner */}
+      <DailyTradePlaybook
+        signals={signals}
+        onSelectAsset={(sym) => setSelectedTicker(sym)}
+        onOpenAcademy={(ast) => {
+          setAcademySignal(ast)
+          setIsAcademyOpen(true)
+        }}
+        lang={lang}
+      />
+
+
+
 
       {/* Main Body View Switching based on activeNav */}
       <main className="minimal-main-content">
@@ -1216,7 +1574,7 @@ function App() {
                 <input
                   type="text"
                   className="search-input"
-                  placeholder="Search ticker or asset class... (Ctrl+K for Commands)"
+                  placeholder={`${t.searchPlaceholder} (Ctrl+K)`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -1225,13 +1583,20 @@ function App() {
               <div className="filter-pill-group">
                 {categories.map(cat => {
                   const isActive = activeFilter === cat
+                  const labelMap = {
+                    'ALL': t.tabAll,
+                    'Favorites': t.tabFavorites,
+                    'Crypto': t.tabCrypto,
+                    'Stock': t.tabStock,
+                    'Commodity': t.tabCommodity
+                  }
                   return (
                     <button
                       key={cat}
                       className={`filter-pill ${isActive ? 'active' : ''}`}
                       onClick={() => setActiveFilter(cat)}
                     >
-                      <span>{cat}</span>
+                      <span>{labelMap[cat] || cat}</span>
                       {isActive && (
                         <motion.div
                           className="filter-glider"
@@ -1243,6 +1608,7 @@ function App() {
                   )
                 })}
               </div>
+
 
               {/* View Mode Switcher Pill (Grid vs Heatmap) */}
               <div className="view-switcher-pill">
@@ -1299,7 +1665,7 @@ function App() {
                 style={{ background: '#f8fafc', color: '#0f172a', borderColor: '#cbd5e1' }}
               >
                 <Plus size={13} />
-                <span>+ Add Ticker</span>
+                <span>Add Ticker</span>
               </button>
             </motion.div>
 
@@ -1391,6 +1757,9 @@ function App() {
                             const isHighIv = vol ? vol.is_high_iv : ivRankVal >= 80
                             const isLowIv = vol ? vol.is_low_iv : ivRankVal <= 20
                             const isNegGamma = vol ? vol.is_neg_gamma : gammaVal === 'Negative'
+                            const isFavorite = favorites.includes((signal.symbol || '').toUpperCase())
+
+                            const riskMeta = getRiskRatingMeta(signal.symbol, signal.asset_type, lang)
 
                             return (
                               <motion.div
@@ -1408,16 +1777,59 @@ function App() {
 
                                 {/* Card Header */}
                                 <div className="card-top-row">
-                                  <div className="ticker-info">
+                                  <div className="ticker-info" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                    <button
+                                      type="button"
+                                      className={`star-fav-btn ${isFavorite ? 'active' : ''}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        toggleFavorite(signal.symbol)
+                                      }}
+                                      title={isFavorite ? "Remove from Favorites" : "Pin to Favorites (Top of Screen)"}
+                                    >
+                                      <Star
+                                        size={14}
+                                        fill={isFavorite ? "#f59e0b" : "none"}
+                                        stroke={isFavorite ? "#f59e0b" : "#94a3b8"}
+                                      />
+                                    </button>
                                     <span className="ticker-symbol">{signal.symbol}</span>
                                     <span className="ticker-type">{capsuleMeta.label}</span>
+
+                                    {/* Risk Rating Badge (1-5 Capital Protection Scale) */}
+                                    <span
+                                      className={`risk-badge-pill ${riskMeta.badgeClass}`}
+                                      title={`${riskMeta.label}: ${riskMeta.description}`}
+                                    >
+                                      <span className="risk-icon">{riskMeta.icon}</span>
+                                      <span className="risk-text">{riskMeta.shortLabel}</span>
+                                    </span>
                                   </div>
 
-                                  <div className={`ticker-change-badge ${changeBadge.positive ? 'positive' : 'negative'}`}>
-                                    {changeBadge.positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                                    <span>{changeBadge.percent}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <button
+                                      type="button"
+                                      className="why-signal-btn font-mono"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setAcademySignal(signal)
+                                        setIsAcademyOpen(true)
+                                      }}
+                                      title="Click to view plain-English signal breakdown & risk rules"
+                                    >
+                                      <GraduationCap size={11} />
+                                      <span>{t.whySignal}</span>
+                                    </button>
+
+                                    <div className={`ticker-change-badge ${changeBadge.positive ? 'positive' : 'negative'}`}>
+                                      {changeBadge.positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                      <span>{changeBadge.percent}</span>
+                                    </div>
                                   </div>
                                 </div>
+
+
+
 
                                 {/* Dynamic Price & Date Scrubber Header */}
                                 <div className={`card-price-row ${hoveredPoint ? 'scrubbing' : ''}`}>
@@ -1574,6 +1986,33 @@ function App() {
                                         <span>DELTA {diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)}</span>
                                       </>
                                     )}
+                                  </div>
+                                </div>
+
+                                {/* Multi-Asset Technical Indicator Radar Strip (RSI 14, Bollinger Bands, Volume Spike) */}
+                                <div className="card-quant-radar-strip font-mono">
+                                  <div className={`radar-pill rsi ${signal.radar?.rsi_state || 'neutral'}`} title={`RSI (14) Relative Strength: ${signal.radar?.rsi || 50}`}>
+                                    <span className="radar-label">RSI 14</span>
+                                    <span className="radar-val">{signal.radar?.rsi || 50.0}</span>
+                                    <div className="micro-plain-tooltip">
+                                      {(signal.radar?.rsi || 50) < 30 ? (t.rsiOversoldDesc || 'Oversold (<30) - Price is historically discounted.') : (signal.radar?.rsi || 50) > 70 ? (t.rsiOverboughtDesc || 'Overbought (>70) - Price has surged rapidly.') : (t.rsiNeutralDesc || 'Neutral RSI (30-70) - Balanced momentum.')}
+                                    </div>
+                                  </div>
+
+                                  <div className={`radar-pill bb ${signal.radar?.bb_state || 'normal'}`} title={signal.radar?.bb_label || 'Bollinger Bands'}>
+                                    <span className="radar-label">BB %B</span>
+                                    <span className="radar-val">{signal.radar?.pct_b || 50.0}%</span>
+                                    <div className="micro-plain-tooltip">
+                                      {(signal.radar?.pct_b || 50) > 100 ? (t.bbUpperDesc || 'Stretching Upper Band - Extreme high volatility.') : (signal.radar?.pct_b || 50) < 0 ? (t.bbLowerDesc || 'Below Lower Band - Below historical price ranges.') : (t.bbNormalDesc || 'Normal Volatility Band - Trading within normal bounds.')}
+                                    </div>
+                                  </div>
+
+                                  <div className={`radar-pill vol ${signal.radar?.vol_state || 'normal'}`} title={`Volume Surge Ratio: ${signal.radar?.vol_spike_ratio || 1.0}x vs 20D Avg`}>
+                                    <span className="radar-label">VOL</span>
+                                    <span className="radar-val">{signal.radar?.vol_label || '1.0x Vol'}</span>
+                                    <div className="micro-plain-tooltip">
+                                      {(signal.radar?.vol_spike_ratio || 1.0) > 1.5 ? (t.volSpikeDesc || 'High Volume Spike - Institutional buyers active today.') : (t.volNormalDesc || 'Normal Volume - Typical average trading activity.')}
+                                    </div>
                                   </div>
                                 </div>
 

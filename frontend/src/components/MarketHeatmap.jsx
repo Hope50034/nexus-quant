@@ -137,7 +137,9 @@ export default function MarketHeatmap({ signals = [], signalType = 'buy', onSele
                   const isPositive = pctVal >= 0
                   const colorScheme = getHeatmapColor(pctVal)
                   const weight = TICKER_WEIGHTS[symbol] || 2.0
-                  const price = asset.current_price !== undefined ? parseFloat(asset.current_price) : parseFloat(asset.close_price || 0)
+                  const rawPriceStr = String(asset.current_price !== undefined ? asset.current_price : (asset.close_price || 0)).replace(/[^0-9.-]/g, '')
+                  const price = parseFloat(rawPriceStr) || 0
+
                   const isHovered = hoveredSymbol === symbol
 
                   return (
