@@ -11,7 +11,8 @@ from .views import (
     SentimentDataView,
     OrderbookDataView,
     PortfolioOptimizerView,
-    PaperTradingView
+    PaperTradingView,
+    PortfolioRiskAnalyticsView
 )
 
 router = DefaultRouter()
@@ -31,4 +32,5 @@ urlpatterns = [
     path('orderbook/', OrderbookDataView.as_view(), name='orderbook-data'),
     path('portfolio-optimizer/', PortfolioOptimizerView.as_view(), name='portfolio-optimizer'),
     path('paper-trading/', PaperTradingView.as_view(), name='paper-trading'),
+    path('portfolio/risk-analytics/', PortfolioRiskAnalyticsView.as_view(), name='portfolio-risk-analytics'),
 ]
