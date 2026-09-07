@@ -219,15 +219,22 @@ LIVE_QUOTE_CACHE = {}
 
 def fetch_live_quote_data(symbol: str, fallback_price: float = 100.0):
     """
-    Fetches real-time price, previous close, 1-day percentage change, and timestamp for a given ticker symbol using yfinance.
+    Fetches real-time price, previous close, 1-day percentage change, and timestamp for a given ticker symbol.
+    Falls back to MS SQL MarketPrices database records if yfinance API calls fail or time out.
     """
     symbol = symbol.strip().upper()
     now = datetime.datetime.now()
 
     if symbol in LIVE_QUOTE_CACHE:
         cached_info, cached_time = LIVE_QUOTE_CACHE[symbol]
-        if (now - cached_time).total_seconds() < 3:
+        if (now - cached_time).total_seconds() < 3 and cached_info.get('current_price') != 100.0:
             return cached_info
+
+    # If fallback_price is default 100.0, pull exact latest ClosePrice from MarketPrices DB
+    if fallback_price == 100.0:
+        db_price_tuple = get_symbol_price_and_prev_close(symbol, 100.0)
+        if db_price_tuple[0] != 100.0:
+            fallback_price = db_price_tuple[0]
 
     try:
         ticker = yf.Ticker(symbol)
@@ -243,8 +250,9 @@ def fetch_live_quote_data(symbol: str, fallback_price: float = 100.0):
                 current_price = float(hist['Close'].iloc[-1])
                 prev_close = current_price
             else:
-                current_price = fallback_price
-                prev_close = fallback_price
+                db_info = get_symbol_price_and_prev_close(symbol, fallback_price)
+                current_price = db_info[0]
+                prev_close = db_info[1]
 
         if prev_close > 0:
             daily_change_pct = ((current_price - prev_close) / prev_close) * 100.0
@@ -259,11 +267,12 @@ def fetch_live_quote_data(symbol: str, fallback_price: float = 100.0):
             'last_updated': now.strftime('%H:%M:%S')
         }
     except Exception:
+        db_info = get_symbol_price_and_prev_close(symbol, fallback_price)
         result = {
-            'current_price': round(fallback_price, 2),
-            'previous_close': round(fallback_price, 2),
-            'percent_change': 0.0,
-            'daily_change_pct': 0.0,
+            'current_price': round(db_info[0], 2),
+            'previous_close': round(db_info[1], 2),
+            'percent_change': round(db_info[2], 2),
+            'daily_change_pct': round(db_info[2], 2),
             'last_updated': now.strftime('%H:%M:%S')
         }
 
@@ -277,18 +286,20 @@ def get_symbol_price_and_prev_close(symbol: str, default_close: float = 100.0):
     Returns (latest_close, prev_close, daily_change_pct).
     """
     symbol = symbol.strip().upper()
+    latest_c = default_close
+    prev_c = default_close
     try:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT ClosePrice, TradeDate
-                FROM MarketPrices
+                SELECT TOP 2 ClosePrice, TradeDate
+                FROM MarketPrices WITH (NOLOCK)
                 WHERE Symbol = %s
                 ORDER BY TradeDate DESC
                 """,
                 [symbol]
             )
-            rows = cursor.fetchmany(2)
+            rows = cursor.fetchall()
 
         if len(rows) >= 2:
             latest_c = float(rows[0][0])
@@ -296,19 +307,11 @@ def get_symbol_price_and_prev_close(symbol: str, default_close: float = 100.0):
         elif len(rows) == 1:
             latest_c = float(rows[0][0])
             prev_c = latest_c
-        else:
-            latest_c = default_close
-            prev_c = default_close
     except Exception:
-        latest_c = default_close
-        prev_c = default_close
+        pass
 
-    if prev_c > 0:
-        pct_change = round(((latest_c - prev_c) / prev_c) * 100.0, 2)
-    else:
-        pct_change = 0.0
-
-    return latest_c, prev_c, pct_change
+    chg_pct = round(((latest_c - prev_c) / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
+    return (latest_c, prev_c, chg_pct)
 
 
 def compute_indicator_radar(symbol: str, close_price: float):
@@ -539,8 +542,10 @@ def fetch_recent_candles_for_symbol(symbol: str, limit: int = 30):
 
 
 def format_signal_with_live_data(signal):
-    close_p = float(signal.close_price)
-    live_q = fetch_live_quote_data(signal.symbol, close_p)
+    sig_close = float(getattr(signal, 'close_price', 100.0))
+    db_price_info = get_symbol_price_and_prev_close(signal.symbol, sig_close)
+    fallback_val = db_price_info[0] if db_price_info[0] != 100.0 else sig_close
+    live_q = fetch_live_quote_data(signal.symbol, fallback_val)
     radar = compute_indicator_radar(signal.symbol, live_q['current_price'])
     macd_val = float(signal.macd)
     macd_sig = float(signal.macd_signal)
