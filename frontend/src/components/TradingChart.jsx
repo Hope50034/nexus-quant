@@ -9,15 +9,12 @@ export function formatCandleData(rawData = []) {
   if (!Array.isArray(rawData)) return []
 
   const formatted = rawData.map(item => {
-    let dateStr = ''
-    if (item.time) {
-      dateStr = typeof item.time === 'string' ? item.time.split('T')[0] : item.time
-    } else if (item.TradeDate || item.trade_date) {
-      dateStr = item.TradeDate || item.trade_date
-    } else if (item.Date || item.date) {
-      dateStr = item.Date || item.date
-    } else {
-      dateStr = new Date().toISOString().split('T')[0]
+    let dateVal = item.time || item.TradeDate || item.trade_date || item.Date || item.date
+    if (typeof dateVal === 'string' && dateVal.includes('T')) {
+      dateVal = dateVal.split('T')[0]
+    }
+    if (!dateVal) {
+      dateVal = new Date().toISOString().split('T')[0]
     }
 
     const parseNum = (val) => parseFloat(String(val ?? 0).replace(/[^0-9.-]/g, '')) || 0
@@ -26,9 +23,8 @@ export function formatCandleData(rawData = []) {
     const low = parseNum(item.low ?? item.LowPrice ?? item.Low ?? item.close_price)
     const close = parseNum(item.close ?? item.ClosePrice ?? item.Close ?? item.close_price)
 
-
     return {
-      time: dateStr,
+      time: dateVal,
       open,
       high: Math.max(open, high, close),
       low: Math.min(open, low, close),
@@ -39,7 +35,12 @@ export function formatCandleData(rawData = []) {
   // Sort chronologically ascending and deduplicate by date for TradingView engine safety
   const seenDates = new Set()
   return formatted
-    .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+    .sort((a, b) => {
+      if (typeof a.time === 'number' && typeof b.time === 'number') {
+        return a.time - b.time
+      }
+      return String(a.time).localeCompare(String(b.time))
+    })
     .filter(item => {
       if (seenDates.has(item.time)) return false
       seenDates.add(item.time)

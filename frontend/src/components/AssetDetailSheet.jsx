@@ -346,13 +346,17 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
         let dateStr = ''
         if (typeof param.time === 'string') {
           dateStr = param.time
+        } else if (typeof param.time === 'number') {
+          dateStr = new Date(param.time * 1000).toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          })
         } else if (param.time && typeof param.time === 'object') {
           dateStr = `${param.time.year}-${String(param.time.month).padStart(2, '0')}-${String(param.time.day).padStart(2, '0')}`
         }
 
         setHoveredPoint({
           price: hoverPrice,
-          date: dateStr ? `Point (${dateStr})` : '',
+          date: dateStr ? `${dateStr}` : '',
           priceChange: pDiff,
           pctChange: pPct,
           isPositive: pPct >= 0,
