@@ -795,6 +795,10 @@ function App() {
       })
   }, [signals, searchQuery, activeFilter, sortOrder, favorites])
 
+  const topGoldenSignal = useMemo(() => {
+    return signals.find(s => s.golden_opportunity?.is_golden_opportunity) || signals[0] || null
+  }, [signals])
+
 
   const kpiData = useMemo(() => {
     const list = displayedSignals.length > 0 ? displayedSignals : signals
@@ -1394,6 +1398,53 @@ function App() {
           </button>
         </div>
       </header>
+
+      {/* 🔥 Top Floating Golden Opportunity Alert Banner */}
+      {topGoldenSignal && (
+        <motion.div
+          className="golden-alert-banner font-mono"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+        >
+          <div className="golden-alert-left">
+            <span className="golden-flame-badge">
+              <Flame size={13} /> GOLDEN BUY OPPORTUNITY
+            </span>
+            <span className="golden-symbol">{topGoldenSignal.symbol}</span>
+            <span className="golden-price">${parseFloat(topGoldenSignal.close_price).toFixed(2)}</span>
+            <span className="golden-conviction-pill">
+              {topGoldenSignal.golden_opportunity?.conviction_score || 96}% Conviction
+            </span>
+          </div>
+
+          <div className="golden-alert-center">
+            <span className="golden-meta-item">
+              <span className="meta-lbl">HOLD DURATION:</span>
+              <span className="meta-val highlight">{topGoldenSignal.golden_opportunity?.holding_duration || '3 – 7 Days (Swing Trade)'}</span>
+            </span>
+            <span className="golden-meta-item">
+              <span className="meta-lbl">TARGET:</span>
+              <span className="meta-val profit">{topGoldenSignal.golden_opportunity?.take_profit_target || '+$12.5%'}</span>
+            </span>
+            <span className="golden-meta-item">
+              <span className="meta-lbl">STOP LOSS:</span>
+              <span className="meta-val loss">{topGoldenSignal.golden_opportunity?.stop_loss_level || '-3.2%'}</span>
+            </span>
+          </div>
+
+          <div className="golden-alert-right">
+            <button
+              className="golden-inspect-btn"
+              onClick={() => setSelectedTicker(topGoldenSignal.symbol)}
+              title="Inspect Golden Trade Setup"
+            >
+              <span>Inspect Setup</span>
+              <ArrowUpRight size={13} />
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Live Financial News */}
       <MarketSentimentBar

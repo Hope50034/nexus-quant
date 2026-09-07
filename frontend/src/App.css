@@ -8351,3 +8351,117 @@ a[title*="TradingView"], #tv-attr-logo, .tv-lightweight-charts-watermark {
 
 .scen-card .scen-pnl.loss { color: #ef4444; }
 .scen-card .scen-usd.loss { color: #dc2626; font-size: 0.65rem; }
+
+/* Golden Opportunity Trade Alert Banner Styles */
+.golden-alert-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-bottom: 2px solid #f59e0b;
+  padding: 0.6rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+  position: relative;
+  z-index: 90;
+}
+
+.golden-alert-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.golden-flame-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.golden-symbol {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #78350f;
+}
+
+.golden-price {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.golden-conviction-pill {
+  background: #d97706;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 12px;
+}
+
+.golden-alert-center {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.golden-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.golden-meta-item .meta-lbl {
+  color: #92400e;
+  font-weight: 700;
+  font-size: 0.675rem;
+}
+
+.golden-meta-item .meta-val {
+  font-weight: 800;
+  color: #78350f;
+}
+
+.golden-meta-item .meta-val.highlight {
+  color: #b45309;
+  background: rgba(251, 191, 36, 0.3);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.golden-meta-item .meta-val.profit { color: #047857; }
+.golden-meta-item .meta-val.loss { color: #b91c1c; }
+
+.golden-alert-right {
+  display: flex;
+  align-items: center;
+}
+
+.golden-inspect-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #78350f;
+  color: #ffffff;
+  border: none;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.725rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.golden-inspect-btn:hover {
+  background: #451a03;
+  box-shadow: 0 2px 8px rgba(120, 53, 15, 0.25);
+}
