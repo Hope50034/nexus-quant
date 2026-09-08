@@ -90,7 +90,6 @@ export default function FullChartModal({
 
 
   // Process and filter candles based on timeframe
-  // Process and filter candles based on timeframe
   const activeCandles = useMemo(() => {
     const raw = (fetchedCandles && fetchedCandles.length > 0)
       ? fetchedCandles
@@ -103,13 +102,20 @@ export default function FullChartModal({
     }
 
     const deduped = deduplicateCandles(raw)
-    return deduped.sort((a, b) => {
+    const sorted = deduped.sort((a, b) => {
       if (typeof a.time === 'number' && typeof b.time === 'number') {
         return a.time - b.time
       }
       return String(a.time).localeCompare(String(b.time))
     })
-  }, [fetchedCandles, candleData, asset])
+
+    const tf = timeframe.toUpperCase()
+    if (tf === '1D') return sorted.slice(-2)
+    if (tf === '1W') return sorted.slice(-7)
+    if (tf === '1M') return sorted.slice(-30)
+    if (tf === '1Y') return sorted.slice(-365)
+    return sorted
+  }, [fetchedCandles, candleData, asset, timeframe])
 
 
   // ESC Key Listener

@@ -488,7 +488,7 @@ def compute_golden_opportunity_meta(symbol, price, macd, macd_sig, radar):
     }
 
 
-def fetch_recent_candles_for_symbol(symbol: str, limit: int = 30):
+def fetch_recent_candles_for_symbol(symbol: str, limit: int = 365):
     symbol = symbol.strip().upper()
     candles = []
     try:
@@ -550,7 +550,7 @@ def format_signal_with_live_data(signal):
     macd_val = float(signal.macd)
     macd_sig = float(signal.macd_signal)
     golden_meta = compute_golden_opportunity_meta(signal.symbol, live_q['current_price'], macd_val, macd_sig, radar)
-    candles = fetch_recent_candles_for_symbol(signal.symbol, limit=30)
+    candles = fetch_recent_candles_for_symbol(signal.symbol, limit=365)
 
     return {
         'symbol': signal.symbol,
@@ -794,11 +794,20 @@ class CandleDataView(APIView):
 
         # 1. Query MS SQL Server MarketPrices table FIRST for daily candle history
         if not is_intraday:
+            limit_map = {
+                '1d': 2,
+                '1w': 7,
+                '1m': 30,
+                '1mo': 30,
+                '1y': 365
+            }
+            limit_val = limit_map.get(tf_lower, 365)
             try:
                 with connection.cursor() as cursor:
                     cursor.execute(
                         """
-                        SELECT TradeDate, 
+                        SELECT TOP (%s)
+                               TradeDate, 
                                ISNULL(OpenPrice, ClosePrice) AS OpenPrice, 
                                ISNULL(HighPrice, ClosePrice) AS HighPrice, 
                                ISNULL(LowPrice, ClosePrice) AS LowPrice, 
@@ -806,13 +815,13 @@ class CandleDataView(APIView):
                                ISNULL(Volume, 0) AS Volume
                         FROM MarketPrices WITH (NOLOCK)
                         WHERE Symbol = %s
-                        ORDER BY TradeDate ASC
+                        ORDER BY TradeDate DESC
                         """,
-                        [sym]
+                        [limit_val, sym]
                     )
                     db_rows = cursor.fetchall()
                     if db_rows:
-                        for r in db_rows:
+                        for r in reversed(db_rows):
                             d_str = str(r[0])
                             o_p = float(r[1])
                             h_p = float(r[2])
