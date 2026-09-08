@@ -92,34 +92,17 @@ export default function FullChartModal({
   // Process and filter candles based on timeframe
   // Process and filter candles based on timeframe
   const activeCandles = useMemo(() => {
-    const raw = fetchedCandles.length > 0 ? fetchedCandles : (candleData || [])
+    const raw = (fetchedCandles && fetchedCandles.length > 0)
+      ? fetchedCandles
+      : (candleData && candleData.length > 0)
+        ? candleData
+        : (asset?.candles || asset?.history || [])
+
     if (!Array.isArray(raw) || raw.length === 0) {
-      // Fallback synthetic candles if API is empty
-      const base = parseFloat(asset?.close_price || asset?.current_price || 150)
-      const today = new Date()
-      const synthetic = []
-      for (let i = 60; i >= 0; i--) {
-        const d = new Date(today)
-        d.setDate(d.getDate() - i)
-        if (d.getDay() === 0 || d.getDay() === 6) continue
-        const open = base + (Math.sin(i * 0.2) * 4)
-        const high = open + Math.abs(Math.cos(i * 0.3) * 3) + 0.5
-        const low = open - Math.abs(Math.sin(i * 0.3) * 3) - 0.5
-        const close = low + (high - low) * 0.6
-        synthetic.push({
-          time: d.toISOString().split('T')[0],
-          open: parseFloat(open.toFixed(2)),
-          high: parseFloat(high.toFixed(2)),
-          low: parseFloat(low.toFixed(2)),
-          close: parseFloat(close.toFixed(2)),
-          volume: Math.floor(1000000 + Math.random() * 5000000)
-        })
-      }
-      return synthetic
+      return []
     }
 
     const deduped = deduplicateCandles(raw)
-    // Sort strictly by ascending time order
     return deduped.sort((a, b) => {
       if (typeof a.time === 'number' && typeof b.time === 'number') {
         return a.time - b.time

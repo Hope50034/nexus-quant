@@ -781,129 +781,103 @@ class CandleDataView(APIView):
     Returns historical/intraday candlestick price series (TradeDate, OpenPrice, HighPrice, LowPrice, ClosePrice, Volume)
     formatted for TradingView lightweight-charts:
     Supports timeframes: 1m, 5m, 15m, 1h, 1D, 1W, 1M, 1Y
+    Primary source: MS SQL Server MarketPrices table.
+    Secondary source: yfinance live download.
     """
     def get(self, request, symbol=None, *args, **kwargs):
         sym = (symbol or request.query_params.get('symbol', 'QQQ')).upper().strip()
         raw_tf = (request.query_params.get('tf') or request.query_params.get('interval') or '1d').strip()
         tf_lower = raw_tf.lower()
-
-        if raw_tf == '1M' or tf_lower in ['1mo', 'month']:
-            tf = '1mo'
-        elif raw_tf == '1Y' or tf_lower in ['1y', 'year']:
-            tf = '1y'
-        elif tf_lower in ['1m', '1min']:
-            tf = '1m'
-        elif tf_lower in ['5m', '5min']:
-            tf = '5m'
-        elif tf_lower in ['15m', '15min']:
-            tf = '15m'
-        elif tf_lower in ['1h', '60m', 'hour']:
-            tf = '1h'
-        elif tf_lower in ['1w', '1wk', 'week']:
-            tf = '1w'
-        else:
-            tf = '1d'
-
-        tf_map = {
-            '1m': ('1m', '7d'),
-            '5m': ('5m', '60d'),
-            '15m': ('15m', '60d'),
-            '1h': ('60m', '1y'),
-            '1d': ('1d', '1y'),
-            '1w': ('1wk', '5y'),
-            '1mo': ('1mo', '5y'),
-            '1y': ('1d', '1y')
-        }
-        interval, period = tf_map.get(tf, ('1d', '1y'))
-        is_intraday = tf in ['1m', '5m', '15m', '1h']
+        is_intraday = tf_lower in ['1m', '1min', '5m', '5min', '15m', '15min', '1h', '60m', 'hour']
 
         rows = []
 
-        try:
-            ticker = yf.Ticker(sym)
-            df = ticker.history(period=period, interval=interval)
-
-            if not df.empty:
-                df.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
-                for idx_date, row in df.iterrows():
-                    try:
-                        o_val, h_val, l_val, c_val = row['Open'], row['High'], row['Low'], row['Close']
-                        if pd.isna(o_val) or pd.isna(h_val) or pd.isna(l_val) or pd.isna(c_val):
-                            continue
-                        o = round(float(o_val), 2)
-                        h = round(float(h_val), 2)
-                        l = round(float(l_val), 2)
-                        c = round(float(c_val), 2)
-                        if math.isnan(o) or math.isnan(h) or math.isnan(l) or math.isnan(c):
-                            continue
-                        v = int(row.get('Volume', 0)) if not pd.isna(row.get('Volume', 0)) else 0
-
-                        if is_intraday:
-                            t_val = int(idx_date.timestamp())
-                        else:
-                            r_date = idx_date.date() if hasattr(idx_date, 'date') else idx_date
-                            t_val = str(r_date)
-
-                        rows.append({
-                            'time': t_val,
-                            'open': o,
-                            'high': h,
-                            'low': l,
-                            'close': c,
-                            'volume': v
-                        })
-                    except Exception:
-                        continue
-        except Exception as e:
-            pass
-
-        # Fallback dataset if yfinance empty/rate limited
-        if not rows:
-            live_q = fetch_live_quote_data(sym)
-            raw_px_str = str(live_q.get('current_price', 150.0)).replace('$', '').replace(',', '').strip()
+        # 1. Query MS SQL Server MarketPrices table FIRST for daily candle history
+        if not is_intraday:
             try:
-                base_price = float(raw_px_str)
-            except ValueError:
-                base_price = 150.0
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT TradeDate, 
+                               ISNULL(OpenPrice, ClosePrice) AS OpenPrice, 
+                               ISNULL(HighPrice, ClosePrice) AS HighPrice, 
+                               ISNULL(LowPrice, ClosePrice) AS LowPrice, 
+                               ISNULL(ClosePrice, 100.0) AS ClosePrice, 
+                               ISNULL(Volume, 0) AS Volume
+                        FROM MarketPrices WITH (NOLOCK)
+                        WHERE Symbol = %s
+                        ORDER BY TradeDate ASC
+                        """,
+                        [sym]
+                    )
+                    db_rows = cursor.fetchall()
+                    if db_rows:
+                        for r in db_rows:
+                            d_str = str(r[0])
+                            o_p = float(r[1])
+                            h_p = float(r[2])
+                            l_p = float(r[3])
+                            c_p = float(r[4])
+                            v_vol = int(r[5])
 
-            now = datetime.datetime.now()
+                            rows.append({
+                                'time': d_str,
+                                'date': d_str,
+                                'open': round(o_p, 2),
+                                'high': round(max(o_p, h_p, c_p), 2),
+                                'low': round(min(o_p, l_p, c_p), 2),
+                                'close': round(c_p, 2),
+                                'volume': v_vol
+                            })
+            except Exception as e:
+                print(f"DB candle query error for {sym}: {e}")
 
-            if is_intraday:
-                step_mins = 1 if tf == '1m' else (5 if tf == '5m' else (15 if tf == '15m' else 60))
-                num_points = 1440 if tf == '1m' else (500 if tf in ['5m', '15m'] else 365)
-                for i in range(num_points, 0, -1):
-                    dt = now - datetime.timedelta(minutes=i * step_mins)
-                    t_val = int(dt.timestamp())
-                    o = round(base_price + math.sin(i * 0.05) * 4.2 + (i * 0.01), 2)
-                    h = round(o + abs(math.cos(i * 0.1)) * 1.5 + 0.5, 2)
-                    l = round(o - abs(math.sin(i * 0.1)) * 1.5 - 0.5, 2)
-                    c = round(l + (h - l) * 0.55, 2)
-                    rows.append({
-                        'time': t_val,
-                        'open': o,
-                        'high': h,
-                        'low': l,
-                        'close': c,
-                        'volume': random.randint(10000, 150000)
-                    })
-            else:
-                today = datetime.date.today()
-                for i in range(365, 0, -1):
-                    d = today - datetime.timedelta(days=i)
-                    if d.weekday() >= 5:
-                        continue
-                    o = round(base_price + math.sin(i * 0.1) * 3.5, 2)
-                    h = round(o + abs(math.cos(i * 0.2)) * 2.5 + 0.5, 2)
-                    l = round(o - abs(math.sin(i * 0.2)) * 2.5 - 0.5, 2)
-                    c = round(l + (h - l) * 0.6, 2)
-                    rows.append({
-                        'time': str(d),
-                        'open': o,
-                        'high': h,
-                        'low': l,
-                        'close': c,
-                        'volume': random.randint(100000, 2000000)
-                    })
+        # 2. If DB rows empty (or for intraday request), query yfinance live ticker
+        if not rows:
+            tf_map = {
+                '1m': ('1m', '7d'),
+                '5m': ('5m', '60d'),
+                '15m': ('15m', '60d'),
+                '1h': ('60m', '1y'),
+                '1d': ('1d', '1y'),
+                '1w': ('1wk', '5y'),
+                '1mo': ('1mo', '5y'),
+                '1y': ('1d', '1y')
+            }
+            interval, period = tf_map.get(tf_lower, ('1d', '1y'))
+
+            try:
+                ticker = yf.Ticker(sym)
+                df = ticker.history(period=period, interval=interval)
+
+                if not df.empty:
+                    df.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
+                    for idx_date, row in df.iterrows():
+                        try:
+                            o = round(float(row['Open']), 2)
+                            h = round(float(row['High']), 2)
+                            l = round(float(row['Low']), 2)
+                            c = round(float(row['Close']), 2)
+                            v = int(row.get('Volume', 0)) if not pd.isna(row.get('Volume', 0)) else 0
+
+                            if is_intraday:
+                                t_val = int(idx_date.timestamp())
+                            else:
+                                r_date = idx_date.date() if hasattr(idx_date, 'date') else idx_date
+                                t_val = str(r_date)
+
+                            rows.append({
+                                'time': t_val,
+                                'open': o,
+                                'high': h,
+                                'low': l,
+                                'close': c,
+                                'volume': v
+                            })
+                        except Exception:
+                            continue
+            except Exception as e:
+                print(f"yfinance candle fetch error for {sym}: {e}")
 
 
         # Deduplicate timestamps and guarantee strict monotonic ascending time order for TradingView
