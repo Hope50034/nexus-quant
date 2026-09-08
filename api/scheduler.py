@@ -1,6 +1,7 @@
 import datetime
 import time
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from django.db import connection, close_old_connections
 import pandas as pd
@@ -156,9 +157,6 @@ def process_ticker_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df.dropna(subset=['Close', 'MACD', 'MACD_Signal'], inplace=True)
     return df
 
-
-def run_market_data_ingestion_job(target_tickers: dict = None):
-from concurrent.futures import ThreadPoolExecutor
 
 def process_single_ticker(ticker_tuple):
     ticker_symbol, asset_type = ticker_tuple
