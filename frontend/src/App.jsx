@@ -78,6 +78,7 @@ import OrderbookModal from './components/OrderbookModal'
 import PortfolioOptimizerModal from './components/PortfolioOptimizerModal'
 import TradingAcademyModal from './components/TradingAcademyModal'
 import DailyTradePlaybook from './components/DailyTradePlaybook'
+import SignalCard from './components/SignalCard'
 import { getRiskRatingMeta } from './utils/riskUtils'
 
 
@@ -706,10 +707,6 @@ function App() {
         setSignals(arrayData)
         setLastPollTime(Date.now())
         setLoading(false)
-        arrayData.forEach(s => {
-          fetchVolatilityData(s.symbol)
-          fetchCandleData(s.symbol)
-        })
       })
       .catch(err => {
         console.error("Error fetching MACD signals:", err)
@@ -1835,395 +1832,50 @@ function App() {
                       <p>No {signalType} signals match parameters.</p>
                     </div>
                   ) : (
-                    <LayoutGroup>
-                      <motion.div
-                        layout
-                        className="minimal-cards-grid"
-                      >
-                        <AnimatePresence mode="popLayout">
-                          {displayedSignals.map((signal) => {
-                            const macdVal = parseFloat(signal.macd) || 0
-                            const macdSigVal = parseFloat(signal.macd_signal) || 0
-                            const diff = macdVal - macdSigVal
-                            const isBuy = signalType === 'buy'
-                            const capsuleMeta = getAssetCapsuleMeta(signal.asset_type)
-                            const changeBadge = get24hChangeBadge(signal)
+                    <div className="minimal-cards-grid">
+                      <AnimatePresence mode="popLayout">
+                        {displayedSignals.map((signal) => {
+                          const changeBadge = get24hChangeBadge(signal)
+                          const isPositiveTrend = changeBadge.positive
+                          const trendData = generate7DayTrendData(signal, isPositiveTrend)
+                          const currentTab = getCardActiveTab(signal.symbol)
+                          const isExpanded = isDrawerExpanded(signal.symbol)
+                          const hoveredPoint = hoveredMap[signal.symbol]
+                          const vol = volatilityData[signal.symbol]
+                          const isVolLoading = !!volatilityLoading[signal.symbol]
+                          const candleSeries = candleMap[signal.symbol] || signal.candles || signal.history || generateFallbackCandles(signal, isPositiveTrend)
+                          const isFavorite = favorites.includes((signal.symbol || '').toUpperCase())
 
-                            // Dynamic curve color: Positive daily change -> Emerald Green (#10B981), Negative daily change -> Crimson Red (#EF4444)
-                            const isPositiveTrend = changeBadge.positive
-                            const glowColor = isPositiveTrend ? '#10B981' : '#EF4444'
-
-                            const trendData = generate7DayTrendData(signal, isPositiveTrend)
-                            const gradientId = `gradient-${signal.symbol.replace(/[^a-zA-Z0-9]/g, '')}`
-                            const currentTab = getCardActiveTab(signal.symbol)
-                            const isExpanded = isDrawerExpanded(signal.symbol)
-
-                            // Hover Scrubber inspection & Live Price values
-                            const hoveredPoint = hoveredMap[signal.symbol]
-                            const livePriceVal = signal.current_price !== undefined ? parseFloat(signal.current_price) : parseFloat(signal.close_price)
-                            const displayedPrice = hoveredPoint ? hoveredPoint.price : livePriceVal
-                            const displayedDate = hoveredPoint
-                              ? hoveredPoint.date
-                              : (signal.last_updated ? `Live ${signal.last_updated}` : `Signal: ${signal.signal_trigger_date || signal.signal_date}`)
-
-                            const vol = volatilityData[signal.symbol]
-                            const isVolLoading = !!volatilityLoading[signal.symbol]
-                            const candleSeries = candleMap[signal.symbol] || signal.candles || signal.history || generateFallbackCandles(signal, isPositiveTrend)
-
-                            const ivRankVal = vol ? vol.iv_rank : (signal.symbol === 'QQQ' || signal.symbol === 'TSLA' || signal.symbol === 'NVDA' ? 88 : 34)
-                            const pcRatio = vol ? vol.pc_ratio : (signal.symbol === 'QQQ' ? '1.15' : '0.92')
-                            const impliedMove = vol ? vol.implied_move : (signal.symbol === 'QQQ' ? '±$4.50' : '±$12.30')
-                            const gammaVal = vol ? vol.gamma_exposure : (signal.symbol === 'QQQ' || signal.symbol === 'TSLA' || !isBuy ? 'Negative' : 'Positive')
-
-                            const isHighIv = vol ? vol.is_high_iv : ivRankVal >= 80
-                            const isLowIv = vol ? vol.is_low_iv : ivRankVal <= 20
-                            const isNegGamma = vol ? vol.is_neg_gamma : gammaVal === 'Negative'
-                            const isFavorite = favorites.includes((signal.symbol || '').toUpperCase())
-
-                            const riskMeta = getRiskRatingMeta(signal.symbol, signal.asset_type, lang)
-
-                            return (
-                              <motion.div
-                                key={signal.symbol}
-                                layout
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                whileHover={{ y: -4, borderColor: '#cbd5e1' }}
-                                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                                className={`minimal-card ${priceFlashes[signal.symbol] || ''}`}
-                                onClick={() => setSelectedTicker(signal.symbol)}
-                                style={{ cursor: 'pointer' }}
-                              >
-
-                                {/* Card Header */}
-                                <div className="card-top-row">
-                                  <div className="ticker-info" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                    <button
-                                      type="button"
-                                      className={`star-fav-btn ${isFavorite ? 'active' : ''}`}
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        toggleFavorite(signal.symbol)
-                                      }}
-                                      title={isFavorite ? "Remove from Favorites" : "Pin to Favorites (Top of Screen)"}
-                                    >
-                                      <Star
-                                        size={14}
-                                        fill={isFavorite ? "#f59e0b" : "none"}
-                                        stroke={isFavorite ? "#f59e0b" : "#94a3b8"}
-                                      />
-                                    </button>
-                                    <span className="ticker-symbol">{signal.symbol}</span>
-                                    <span className="ticker-type">{capsuleMeta.label}</span>
-
-                                    {/* Risk Rating Badge (1-5 Capital Protection Scale) */}
-                                    <span
-                                      className={`risk-badge-pill ${riskMeta.badgeClass}`}
-                                      title={`${riskMeta.label}: ${riskMeta.description}`}
-                                    >
-                                      <span className="risk-icon">{riskMeta.icon}</span>
-                                      <span className="risk-text">{riskMeta.shortLabel}</span>
-                                    </span>
-                                  </div>
-
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <button
-                                      type="button"
-                                      className="why-signal-btn font-mono"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        setAcademySignal(signal)
-                                        setIsAcademyOpen(true)
-                                      }}
-                                      title="Click to view plain-English signal breakdown & risk rules"
-                                    >
-                                      <GraduationCap size={11} />
-                                      <span>{t.whySignal}</span>
-                                    </button>
-
-                                    <div className={`ticker-change-badge ${changeBadge.positive ? 'positive' : 'negative'}`}>
-                                      {changeBadge.positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                                      <span>{changeBadge.percent}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-
-
-
-                                {/* Dynamic Price & Date Scrubber Header */}
-                                <div className={`card-price-row ${hoveredPoint ? 'scrubbing' : ''}`}>
-                                  <span className={`card-price tabular-nums ${priceFlashes[signal.symbol] || ''}`}>{formatCurrency(displayedPrice)}</span>
-                                  <div className="price-meta-stack" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
-                                    <span className="card-date tabular-nums">{displayedDate}</span>
-                                    {!hoveredPoint && (signal.signal_trigger_date || signal.signal_date) && (
-                                      <span className="card-trigger-sub" style={{ fontSize: '0.6rem', fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
-                                        Triggered: {signal.signal_trigger_date || signal.signal_date}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Signal Insight Pill (Companion Intelligence) */}
-                                <div className="signal-insight-wrapper">
-                                  <div className={`insight-pill ${isBuy ? 'bullish' : 'bearish'}`}>
-                                    <span className="insight-icon">{isBuy ? '⚡' : '⚠️'}</span>
-                                    <span className="insight-text">
-                                      {isBuy ? 'Bullish EMA (20/50) Golden Cross' : 'MACD Momentum Bearish Divergence'}
-                                    </span>
-                                  </div>
-                                  <div className="insight-tooltip">
-                                    {isBuy
-                                      ? `20-day EMA crossed above 50-day EMA for ${signal.symbol} with expanding positive MACD delta (+${diff.toFixed(2)}), signaling strong upside momentum.`
-                                      : `MACD line broke below signal line for ${signal.symbol} with negative momentum divergence (${diff.toFixed(2)}), indicating increased downside risk.`}
-                                  </div>
-                                </div>
-
-                                {/* Chart Container */}
-                                <div className="card-chart-block" style={{ position: 'relative' }}>
-                                  <button
-                                    type="button"
-                                    className="chart-expand-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setFullChartAsset(signal)
-                                    }}
-                                    title="Expand Full-Screen Chart Modal"
-                                  >
-                                    <Maximize2 size={12} />
-                                  </button>
-
-                                  <div className="chart-micro-header">
-                                    <span className="chart-label">PRICE ACTION</span>
-                                    <div className="chart-tabs">
-
-                                      {['CANDLE', 'EMA', 'MACD'].map((tab) => {
-                                        const isActive = currentTab === tab
-                                        return (
-                                          <button
-                                            key={tab}
-                                            className={`micro-tab-btn ${isActive ? 'active' : ''}`}
-                                            onClick={() => handleCardTabChange(signal.symbol, tab)}
-                                          >
-                                            <span>{tab}</span>
-                                            {isActive && (
-                                              <motion.div
-                                                className="tab-glider"
-                                                layoutId={`tab-glider-${signal.symbol}`}
-                                                transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-                                              />
-                                            )}
-                                          </button>
-                                        )
-                                      })}
-                                    </div>
-                                  </div>
-
-                                  <div className="chart-canvas-area">
-                                    {currentTab === 'CANDLE' && (
-                                      <TradingChart
-                                        data={candleSeries}
-                                        isBuy={isPositiveTrend}
-                                        height={100}
-                                      />
-                                    )}
-
-                                    {currentTab === 'EMA' && (
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <RechartsLineChart
-                                          data={trendData}
-                                          margin={{ top: 6, right: 0, left: 0, bottom: 6 }}
-                                          onMouseMove={(state) => handleChartMouseMove(signal.symbol, state)}
-                                          onMouseLeave={() => handleChartMouseLeave(signal.symbol)}
-                                        >
-                                          <YAxis domain={['auto', 'auto']} hide />
-                                          <Tooltip
-                                            content={<ScrubberTooltip glowColor={glowColor} />}
-                                            cursor={{ stroke: '#94A3B8', strokeDasharray: '2 2', strokeWidth: 1 }}
-                                          />
-                                          <Line type="monotone" dataKey="macd" stroke={glowColor} strokeWidth={2} dot={false} activeDot={{ r: 5, fill: glowColor, stroke: '#ffffff', strokeWidth: 2 }} />
-                                          <Line type="monotone" dataKey="signal" stroke="#0284c7" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
-                                        </RechartsLineChart>
-                                      </ResponsiveContainer>
-                                    )}
-
-                                    {currentTab === 'MACD' && (
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart
-                                          data={trendData}
-                                          margin={{ top: 6, right: 0, left: 0, bottom: 6 }}
-                                          onMouseMove={(state) => handleChartMouseMove(signal.symbol, state)}
-                                          onMouseLeave={() => handleChartMouseLeave(signal.symbol)}
-                                        >
-                                          <defs>
-                                            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                                              <stop offset="5%" stopColor={glowColor} stopOpacity={0.25} />
-                                              <stop offset="95%" stopColor={glowColor} stopOpacity={0.0} />
-                                            </linearGradient>
-                                          </defs>
-                                          <YAxis domain={['auto', 'auto']} hide />
-                                          <Tooltip
-                                            content={<ScrubberTooltip glowColor={glowColor} />}
-                                            cursor={{ stroke: '#94A3B8', strokeDasharray: '2 2', strokeWidth: 1 }}
-                                          />
-                                          <Area
-                                            type="monotone"
-                                            dataKey="macd"
-                                            stroke={glowColor}
-                                            strokeWidth={2}
-                                            fillOpacity={1}
-                                            fill={`url(#${gradientId})`}
-                                            activeDot={{ r: 5, fill: glowColor, stroke: '#ffffff', strokeWidth: 2 }}
-                                          />
-                                        </AreaChart>
-                                      </ResponsiveContainer>
-                                    )}
-                                  </div>
-
-                                  {/* Technical Readout Footer: OHLC in CANDLE mode */}
-                                  <div className="chart-footer-metrics">
-                                    {currentTab === 'CANDLE' ? (() => {
-                                      const parseVal = (val, fb) => {
-                                        const n = typeof val === 'number' ? val : parseFloat(val)
-                                        return isNaN(n) ? fb : n
-                                      }
-                                      const latestCandle = (candleSeries && candleSeries.length > 0)
-                                        ? candleSeries[candleSeries.length - 1]
-                                        : {}
-                                      const oVal = parseVal(latestCandle.open ?? latestCandle.OpenPrice, displayedPrice * 0.995)
-                                      const hVal = parseVal(latestCandle.high ?? latestCandle.HighPrice, displayedPrice * 1.008)
-                                      const lVal = parseVal(latestCandle.low ?? latestCandle.LowPrice, displayedPrice * 0.992)
-                                      const cVal = parseVal(latestCandle.close ?? latestCandle.ClosePrice, displayedPrice)
-
-                                      return (
-                                        <>
-                                          <span>O: ${oVal.toFixed(2)}</span>
-                                          <span>H: ${hVal.toFixed(2)}</span>
-                                          <span>L: ${lVal.toFixed(2)}</span>
-                                          <span>C: ${cVal.toFixed(2)}</span>
-                                        </>
-                                      )
-                                    })() : (
-                                      <>
-                                        <span>MACD {macdVal > 0 ? `+${macdVal.toFixed(2)}` : macdVal.toFixed(2)}</span>
-                                        <span>SIG {macdSigVal > 0 ? `+${macdSigVal.toFixed(2)}` : macdSigVal.toFixed(2)}</span>
-                                        <span>DELTA {diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Multi-Asset Technical Indicator Radar Strip (RSI 14, Bollinger Bands, Volume Spike) */}
-                                <div className="card-quant-radar-strip font-mono">
-                                  <div className={`radar-pill rsi ${signal.radar?.rsi_state || 'neutral'}`} title={`RSI (14) Relative Strength: ${signal.radar?.rsi || 50}`}>
-                                    <span className="radar-label">RSI 14</span>
-                                    <span className="radar-val">{signal.radar?.rsi || 50.0}</span>
-                                    <div className="micro-plain-tooltip">
-                                      {(signal.radar?.rsi || 50) < 30 ? (t.rsiOversoldDesc || 'Oversold (<30) - Price is historically discounted.') : (signal.radar?.rsi || 50) > 70 ? (t.rsiOverboughtDesc || 'Overbought (>70) - Price has surged rapidly.') : (t.rsiNeutralDesc || 'Neutral RSI (30-70) - Balanced momentum.')}
-                                    </div>
-                                  </div>
-
-                                  <div className={`radar-pill bb ${signal.radar?.bb_state || 'normal'}`} title={signal.radar?.bb_label || 'Bollinger Bands'}>
-                                    <span className="radar-label">BB %B</span>
-                                    <span className="radar-val">{signal.radar?.pct_b || 50.0}%</span>
-                                    <div className="micro-plain-tooltip">
-                                      {(signal.radar?.pct_b || 50) > 100 ? (t.bbUpperDesc || 'Stretching Upper Band - Extreme high volatility.') : (signal.radar?.pct_b || 50) < 0 ? (t.bbLowerDesc || 'Below Lower Band - Below historical price ranges.') : (t.bbNormalDesc || 'Normal Volatility Band - Trading within normal bounds.')}
-                                    </div>
-                                  </div>
-
-                                  <div className={`radar-pill vol ${signal.radar?.vol_state || 'normal'}`} title={`Volume Surge Ratio: ${signal.radar?.vol_spike_ratio || 1.0}x vs 20D Avg`}>
-                                    <span className="radar-label">VOL</span>
-                                    <span className="radar-val">{signal.radar?.vol_label || '1.0x Vol'}</span>
-                                    <div className="micro-plain-tooltip">
-                                      {(signal.radar?.vol_spike_ratio || 1.0) > 1.5 ? (t.volSpikeDesc || 'High Volume Spike - Institutional buyers active today.') : (t.volNormalDesc || 'Normal Volume - Typical average trading activity.')}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Options Drawer Toggle */}
-                                <div className="drawer-btn-wrapper">
-                                  <button
-                                    className="minimal-drawer-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      toggleDrawer(signal.symbol)
-                                    }}
-                                  >
-
-                                    <span>OPTIONS DATA</span>
-                                    <motion.span
-                                      animate={{ rotate: isExpanded ? 180 : 0 }}
-                                      transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                                      style={{ display: 'inline-flex' }}
-                                    >
-                                      <ChevronDown size={13} />
-                                    </motion.span>
-                                  </button>
-                                </div>
-
-                                {/* Options Drawer Content */}
-                                <AnimatePresence initial={false}>
-                                  {isExpanded && (
-                                    <motion.div
-                                      key={`drawer-${signal.symbol}`}
-                                      className="minimal-drawer-panel"
-                                      initial={{ height: 0, opacity: 0, scaleY: 0.95 }}
-                                      animate={{ height: 'auto', opacity: 1, scaleY: 1 }}
-                                      exit={{ height: 0, opacity: 0, scaleY: 0.95 }}
-                                      transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                                      style={{ transformOrigin: 'top center', overflow: 'hidden' }}
-                                    >
-                                      {isVolLoading ? (
-                                        <div className="drawer-loading-row">
-                                          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                                          <span>Loading metrics...</span>
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <div className="minimal-options-grid">
-                                            <div className="opt-cell">
-                                              <span className="opt-label">IV RANK</span>
-                                              <span className={`opt-value ${isHighIv ? 'high-iv' : isLowIv ? 'low-iv' : ''}`}>
-                                                {ivRankVal}%
-                                              </span>
-                                            </div>
-
-                                            <div className="opt-cell">
-                                              <span className="opt-label">P/C RATIO</span>
-                                              <span className="opt-value">{pcRatio}</span>
-                                            </div>
-
-                                            <div className="opt-cell">
-                                              <span className="opt-label">0DTE MOVE</span>
-                                              <span className="opt-value">{impliedMove}</span>
-                                            </div>
-
-                                            <div className="opt-cell">
-                                              <span className="opt-label">GEX</span>
-                                              <span className={`opt-value ${isNegGamma ? 'neg-gamma' : 'pos-gamma'}`}>
-                                                {gammaVal}
-                                              </span>
-                                            </div>
-                                          </div>
-
-                                          {/* Options Strategy Payoff Visualizer (P&L at Expiration Curve) */}
-                                          <OptionsPayoffChart
-                                            underlyingPrice={displayedPrice}
-                                            symbol={signal.symbol}
-                                            isBuySignal={isBuy}
-                                          />
-                                        </>
-                                      )}
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
-                              </motion.div>
-                            )
-                          })}
-                        </AnimatePresence>
-                      </motion.div>
-                    </LayoutGroup>
+                          return (
+                            <SignalCard
+                              key={signal.symbol}
+                              signal={signal}
+                              signalType={signalType}
+                              lang={lang}
+                              t={t}
+                              isFavorite={isFavorite}
+                              toggleFavorite={toggleFavorite}
+                              setSelectedTicker={setSelectedTicker}
+                              setAcademySignal={setAcademySignal}
+                              setIsAcademyOpen={setIsAcademyOpen}
+                              setFullChartAsset={setFullChartAsset}
+                              currentTab={currentTab}
+                              handleCardTabChange={handleCardTabChange}
+                              isExpanded={isExpanded}
+                              toggleDrawer={toggleDrawer}
+                              hoveredPoint={hoveredPoint}
+                              handleChartMouseMove={null}
+                              handleChartMouseLeave={null}
+                              volatilityData={volatilityData}
+                              isVolLoading={isVolLoading}
+                              candleSeries={candleSeries}
+                              trendData={trendData}
+                              priceFlash={priceFlashes[signal.symbol]}
+                            />
+                          )
+                        })}
+                      </AnimatePresence>
+                    </div>
                   )}
                 </motion.div>
               )}
