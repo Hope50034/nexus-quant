@@ -96,7 +96,7 @@ function generateFallbackCandles(symbol, closePrice) {
   })
 }
 
-export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpenBacktest, onOpenAlerts, onOpenFullChart, onOpenOptions, onOpenReport, API_BASE_URL = 'http://127.0.0.1:8000' }) {
+export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpenBacktest, onOpenAlerts, onOpenFullChart, onOpenOptions, onOpenReport, onOpenMentor, API_BASE_URL = 'http://127.0.0.1:8000' }) {
 
 
 
@@ -477,7 +477,17 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
                   className="sync-now-btn"
+                  onClick={() => onOpenMentor?.(symbol)}
+                  title="Ask AI Trading Mentor (Uncle Warren & Quant Bro) about this asset"
+                  style={{ padding: '0.3rem 0.65rem', fontSize: '0.725rem', background: '#fdf2f8', borderColor: '#fbcfe8', color: '#db2777', fontWeight: 700 }}
+                >
+                  <Sparkles size={13} style={{ color: '#db2777' }} />
+                  <span>Ask Mentor</span>
+                </button>
+                <button
+                  className="sync-now-btn"
                   onClick={() => onOpenFullChart?.(asset)}
+
                   title="Expand Full-Screen Interactive Chart"
                   style={{ padding: '0.3rem 0.65rem', fontSize: '0.725rem' }}
                 >

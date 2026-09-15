@@ -80,6 +80,7 @@ import TradingAcademyModal from './components/TradingAcademyModal'
 import DailyTradePlaybook from './components/DailyTradePlaybook'
 import SignalCard from './components/SignalCard'
 import { getRiskRatingMeta } from './utils/riskUtils'
+import AIMentorModal from './components/AIMentorModal'
 
 
 
@@ -202,6 +203,10 @@ function App() {
   // Beginner Trader Academy & Signal Explainer State
   const [isAcademyOpen, setIsAcademyOpen] = useState(false)
   const [academySignal, setAcademySignal] = useState(null)
+
+  // AI Trading Mentor Companion ("Uncle Warren" & "The Quant Bro") State
+  const [isMentorOpen, setIsMentorOpen] = useState(false)
+  const [mentorPersona, setMentorPersona] = useState('warren')
 
   // Bilingual English/Thai (EN/TH) i18n State
   const [lang, setLang] = useState(() => localStorage.getItem('kappa_lang') || 'en')
@@ -1014,7 +1019,9 @@ function App() {
           setReportSymbol(sym)
           setIsReportOpen(true)
         }}
+        onOpenMentor={() => setIsMentorOpen(true)}
       />
+
 
 
 
@@ -1189,9 +1196,13 @@ function App() {
                 key={tab}
                 className={`minimal-nav-tab ${isActive ? 'active' : ''}`}
                 onClick={() => {
-                  setActiveNav(tab)
-                  if (tab === 'AI Engine') setIsAiOpen(true)
+                  if (tab === 'AI Engine') {
+                    setIsMentorOpen(true)
+                  } else {
+                    setActiveNav(tab)
+                  }
                 }}
+
               >
                 <span>{tab}</span>
                 {isActive && (
@@ -1279,6 +1290,17 @@ function App() {
                   </div>
 
                   <div className="popover-grid">
+                    <button className="popover-item" onClick={() => { setIsMentorOpen(true); setIsToolsDropdownOpen(false); }} style={{ background: '#fdf2f8', borderColor: '#fbcfe8' }}>
+                      <div className="item-icon-wrapper" style={{ background: '#fce7f3', color: '#db2777' }}>
+                        <Bot size={15} />
+                      </div>
+                      <div className="item-text">
+                        <span className="item-title">AI Trading Mentor (Warren & Bro)</span>
+                        <span className="item-desc">Where & why to invest in real time</span>
+                      </div>
+                      <span className="item-badge" style={{ background: '#db2777', color: '#fff' }}>HOT</span>
+                    </button>
+
                     <button className="popover-item" onClick={() => { setBacktestSymbol('BTC-USD'); setIsBacktestOpen(true); setIsToolsDropdownOpen(false); }}>
                       <div className="item-icon-wrapper" style={{ background: '#f0f9ff', color: '#0284c7' }}>
                         <BarChart3 size={15} />
@@ -1893,7 +1915,52 @@ function App() {
         signalType={signalType}
         onSelectTicker={(symbol) => setSelectedTicker(symbol)}
       />
+
+      {/* AI Trading Mentor Companion ("Uncle Warren" & "The Quant Bro") Modal */}
+      <AIMentorModal
+        isOpen={isMentorOpen}
+        onClose={() => setIsMentorOpen(false)}
+        signals={signals}
+        activeAsset={activeAsset}
+        onSelectAsset={(sym) => setSelectedTicker(sym)}
+        lang={lang}
+      />
+
+      {/* Floating AI Mentor Companion Widget (Bottom-Right) */}
+      <div className="mentor-floating-container">
+        <motion.div
+          className="mentor-speech-bubble font-mono"
+          initial={{ opacity: 0, scale: 0.9, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          onClick={() => setIsMentorOpen(true)}
+        >
+          <span className="bubble-mentor-tag">
+            {mentorPersona === 'warren' ? '🎩 UNCLE WARREN' : '⚡ QUANT BRO'}
+          </span>
+          <p className="bubble-text">
+            {mentorPersona === 'warren'
+              ? '“Rule #1: Never lose money. Click to see our #1 value setup today.”'
+              : '“Yo! Volume surge detected on the tape. Click to see the alpha breakout!”'}
+          </p>
+          <span className="bubble-cta">Ask Mentor &rarr;</span>
+        </motion.div>
+
+        <motion.button
+          type="button"
+          className="mentor-floating-fab"
+          onClick={() => setIsMentorOpen(true)}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          title="Open AI Trading Mentor Desk (Uncle Warren & Quant Bro)"
+        >
+          <span className="fab-avatar-icon">{mentorPersona === 'warren' ? '🎩' : '⚡'}</span>
+          <span className="fab-pulse-ring" />
+          <span className="fab-status-badge">AI MENTOR</span>
+        </motion.button>
+      </div>
     </motion.div>
+
   )
 }
 
