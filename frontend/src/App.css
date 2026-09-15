@@ -9310,3 +9310,129 @@ a[title*="TradingView"], #tv-attr-logo, .tv-lightweight-charts-watermark {
   color: #0f172a;
   box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
+
+/* ==========================================================================
+   STREAMLINED HEADER & UNIFIED INTELLIGENCE SUITE
+   ========================================================================== */
+.header-action-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f8fafc;
+  padding: 2px 4px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.intel-suite-container {
+  max-width: 1440px;
+  margin: 0.5rem auto 0 auto;
+  padding: 0 1.5rem;
+}
+
+.intel-suite-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 0.35rem 0.85rem;
+}
+
+.intel-suite-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.intel-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.intel-tab-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.intel-tab-btn.active {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.intel-tab-btn:nth-child(2).active {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.intel-badge-pill {
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.6rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.intel-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.intel-collapse-btn:hover {
+  color: #0f172a;
+}
+
+.intel-collapse-icon {
+  transition: transform 0.2s ease;
+}
+
+.intel-collapse-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
+.intel-suite-body {
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  background: #ffffff;
+}
+
+.intel-suite-body .golden-alert-banner {
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.intel-suite-body .playbook-banner-card {
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}

@@ -217,6 +217,10 @@ function App() {
   }
   const t = translations[lang] || translations.en
 
+  // Intelligence Suite Active View ('golden' | 'playbook') & Collapse State
+  const [intelView, setIntelView] = useState('golden')
+  const [isIntelCollapsed, setIsIntelCollapsed] = useState(false)
+
 
 
 
@@ -1218,47 +1222,69 @@ function App() {
         </nav>
 
         <div className="header-right-group">
-          {/* Live Streaming Toggle Switch */}
-          <button
-            className={`live-toggle-btn ${isLivePolling ? 'active' : ''}`}
-            onClick={() => setIsLivePolling(prev => !prev)}
-            title={isLivePolling ? 'Click to Pause Live Streaming' : 'Click to Resume Live Streaming'}
-          >
-            <Activity size={13} className={isLivePolling ? 'live-icon-active' : ''} />
-            <span>Stream {isLivePolling ? 'ON' : 'OFF'}</span>
-          </button>
+          {/* Mode Switcher Pill */}
+          <div className="mode-toggle-pill">
+            <button
+              className={`mode-btn ${signalType === 'buy' ? 'active-buy' : ''}`}
+              onClick={() => setSignalType('buy')}
+            >
+              <TrendingUp size={12} />
+              <span>Bullish</span>
+              {signalType === 'buy' && (
+                <motion.div
+                  className="mode-glider"
+                  layoutId="mode-glider"
+                  transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+                />
+              )}
+            </button>
+            <button
+              className={`mode-btn ${signalType === 'sell' ? 'active-sell' : ''}`}
+              onClick={() => setSignalType('sell')}
+            >
+              <TrendingDown size={12} />
+              <span>Bearish</span>
+              {signalType === 'sell' && (
+                <motion.div
+                  className="mode-glider"
+                  layoutId="mode-glider"
+                  transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+                />
+              )}
+            </button>
+          </div>
 
-          {/* Manual On-Demand Sync Trigger Button */}
-          <button
-            className="sync-now-btn"
-            onClick={handleTriggerIngest}
-            disabled={isSyncing}
-            title="Immediately fetch latest market data & MACD signals from server"
-          >
-            <RefreshCw size={13} className={isSyncing ? 'spin-icon' : ''} />
-            <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
-          </button>
+          {/* Compact Stream & Sync Controls */}
+          <div className="header-action-cluster">
+            <button
+              className={`live-toggle-btn ${isLivePolling ? 'active' : ''}`}
+              onClick={() => setIsLivePolling(prev => !prev)}
+              title={isLivePolling ? 'Click to Pause Live Streaming' : 'Click to Resume Live Streaming'}
+            >
+              <Activity size={13} className={isLivePolling ? 'live-icon-active' : ''} />
+              <span>{isLivePolling ? 'Stream ON' : 'Stream OFF'}</span>
+            </button>
 
-          {/* Interactive Ingest New Ticker Modal Trigger */}
-          <button
-            className="sync-now-btn"
-            onClick={() => setIsAddModalOpen(true)}
-            title="Ingest new market ticker symbol via yfinance"
-            style={{ background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0' }}
-          >
-            <Plus size={13} />
-            <span>{t.addTicker}</span>
-          </button>
+            <button
+              className="sync-now-btn"
+              onClick={handleTriggerIngest}
+              disabled={isSyncing}
+              title="Fetch latest market data & MACD signals from server"
+            >
+              <RefreshCw size={13} className={isSyncing ? 'spin-icon' : ''} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
+            </button>
+          </div>
 
-          {/* Bilingual English / Thai Language Switcher Toggle */}
+          {/* Language Switcher Toggle */}
           <button
             className="sync-now-btn font-mono"
             onClick={toggleLanguage}
-            title={lang === 'en' ? 'Switch to Thai (เปลี่ยนเป็นภาษาไทย)' : 'Switch to English'}
-            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1', fontWeight: 800 }}
+            title={lang === 'en' ? 'Switch to Thai' : 'Switch to English'}
+            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1', fontWeight: 700 }}
           >
             <Globe size={13} style={{ color: '#0284c7' }} />
-            <span>{lang === 'en' ? '🇺🇸 EN | TH 🇹🇭' : '🇹🇭 TH | EN 🇺🇸'}</span>
+            <span>{lang === 'en' ? 'EN' : 'TH'}</span>
           </button>
 
 
@@ -1413,36 +1439,7 @@ function App() {
 
 
 
-          <div className="mode-toggle-pill">
-            <button
-              className={`mode-btn ${signalType === 'buy' ? 'active-buy' : ''}`}
-              onClick={() => setSignalType('buy')}
-            >
-              <TrendingUp size={13} />
-              <span>Bullish</span>
-              {signalType === 'buy' && (
-                <motion.div
-                  className="mode-glider"
-                  layoutId="mode-glider"
-                  transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-                />
-              )}
-            </button>
-            <button
-              className={`mode-btn ${signalType === 'sell' ? 'active-sell' : ''}`}
-              onClick={() => setSignalType('sell')}
-            >
-              <TrendingDown size={13} />
-              <span>Bearish</span>
-              {signalType === 'sell' && (
-                <motion.div
-                  className="mode-glider"
-                  layoutId="mode-glider"
-                  transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-                />
-              )}
-            </button>
-          </div>
+
 
           <button
             className="minimal-ai-trigger"
@@ -1456,101 +1453,143 @@ function App() {
         </div>
       </header>
 
-      {/* 🔥 Top Floating Golden Opportunity Alert Banner with Multi-Stock Carousel */}
-      {activeGoldenSignal && (
-        <motion.div
-          key={activeGoldenSignal.symbol}
-          className="golden-alert-banner font-mono"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 420, damping: 30 }}
-        >
-          <div className="golden-alert-left">
-            <span className="golden-flame-badge">
-              <Flame size={13} /> GOLDEN BUY OPPORTUNITY
-            </span>
-
-            {/* Multi-Stock Carousel Nav Controls */}
-            {goldenSignals.length > 1 && (
-              <div className="golden-nav-arrows font-mono">
-                <button className="golden-nav-btn" onClick={prevGolden} title="Previous Stock Opportunity">
-                  <ChevronLeft size={13} />
-                </button>
-                <span className="golden-count-tag">
-                  {(goldenIndex % goldenSignals.length) + 1}/{goldenSignals.length}
-                </span>
-                <button className="golden-nav-btn" onClick={nextGolden} title="Next Stock Opportunity">
-                  <ChevronRight size={13} />
-                </button>
-              </div>
-            )}
-
-            {/* Stock Ticker Select Dropdown */}
-            <select
-              className="golden-stock-select font-mono"
-              value={activeGoldenSignal.symbol}
-              onChange={(e) => {
-                const foundIdx = goldenSignals.findIndex(s => s.symbol === e.target.value)
-                if (foundIdx !== -1) setGoldenIndex(foundIdx)
-              }}
-            >
-              {goldenSignals.map(s => (
-                <option key={s.symbol} value={s.symbol}>
-                  {s.symbol} ({s.golden_opportunity?.conviction_score || 90}% Win Rate)
-                </option>
-              ))}
-            </select>
-
-            <span className="golden-price">${parseFloat(activeGoldenSignal.close_price).toFixed(2)}</span>
-            <span className="golden-conviction-pill">
-              {activeGoldenSignal.golden_opportunity?.conviction_score || 96}% Conviction
-            </span>
-          </div>
-
-          <div className="golden-alert-center">
-            <span className="golden-meta-item">
-              <span className="meta-lbl">HOLD DURATION:</span>
-              <span className="meta-val highlight">{activeGoldenSignal.golden_opportunity?.holding_duration || '3 – 7 Days (Swing Trade)'}</span>
-            </span>
-            <span className="golden-meta-item">
-              <span className="meta-lbl">TARGET:</span>
-              <span className="meta-val profit">{activeGoldenSignal.golden_opportunity?.take_profit_target || '+$12.5%'}</span>
-            </span>
-            <span className="golden-meta-item">
-              <span className="meta-lbl">STOP LOSS:</span>
-              <span className="meta-val loss">{activeGoldenSignal.golden_opportunity?.stop_loss_level || '-3.2%'}</span>
-            </span>
-          </div>
-
-          <div className="golden-alert-right">
-            <button
-              className="golden-inspect-btn"
-              onClick={() => setSelectedTicker(activeGoldenSignal.symbol)}
-              title={`Inspect ${activeGoldenSignal.symbol} Golden Trade Setup`}
-            >
-              <span>Inspect {activeGoldenSignal.symbol}</span>
-              <ArrowUpRight size={13} />
-            </button>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Live Financial News */}
+      {/* Live Financial News Sentiment Ticker */}
       <MarketSentimentBar
         onOpenModal={() => setIsSentimentOpen(true)}
         API_BASE_URL={API_BASE_URL}
       />
 
-      {/* Live Actionable Trade & Investment Playbook Banner */}
-      <DailyTradePlaybook
-        signals={signals}
-        onSelectAsset={(sym) => setSelectedTicker(sym)}
-        onOpenAcademy={(ast) => {
-          setAcademySignal(ast)
-          setIsAcademyOpen(true)
-        }}
-        lang={lang}
-      />
+      {/* Modern Unified Alpha Intelligence Section */}
+      <section className="intel-suite-container">
+        <div className="intel-suite-header font-mono">
+          <div className="intel-suite-tabs">
+            <button
+              className={`intel-tab-btn ${intelView === 'golden' ? 'active' : ''}`}
+              onClick={() => { setIntelView('golden'); setIsIntelCollapsed(false); }}
+            >
+              <Flame size={13} className="text-amber-500" />
+              <span>Golden Opportunity</span>
+              {goldenSignals.length > 0 && (
+                <span className="intel-badge-pill">{goldenSignals.length}</span>
+              )}
+            </button>
+
+            <button
+              className={`intel-tab-btn ${intelView === 'playbook' ? 'active' : ''}`}
+              onClick={() => { setIntelView('playbook'); setIsIntelCollapsed(false); }}
+            >
+              <Award size={13} className="text-sky-500" />
+              <span>AI Trade Playbook</span>
+            </button>
+          </div>
+
+          <button
+            className="intel-collapse-btn"
+            onClick={() => setIsIntelCollapsed(prev => !prev)}
+            title={isIntelCollapsed ? 'Expand Intelligence Banner' : 'Collapse Intelligence Banner'}
+          >
+            <span>{isIntelCollapsed ? 'Show Analysis' : 'Hide'}</span>
+            <ChevronDown size={13} className={`intel-collapse-icon ${isIntelCollapsed ? 'collapsed' : ''}`} />
+          </button>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {!isIntelCollapsed && (
+            <motion.div
+              key={intelView}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18 }}
+              className="intel-suite-body"
+            >
+              {intelView === 'golden' && activeGoldenSignal && (
+                <div className="golden-alert-banner font-mono">
+                  <div className="golden-alert-left">
+                    <span className="golden-flame-badge">
+                      <Flame size={12} /> TOP SETUP
+                    </span>
+
+                    {/* Multi-Stock Carousel Nav Controls */}
+                    {goldenSignals.length > 1 && (
+                      <div className="golden-nav-arrows font-mono">
+                        <button className="golden-nav-btn" onClick={prevGolden} title="Previous Stock Opportunity">
+                          <ChevronLeft size={12} />
+                        </button>
+                        <span className="golden-count-tag">
+                          {(goldenIndex % goldenSignals.length) + 1}/{goldenSignals.length}
+                        </span>
+                        <button className="golden-nav-btn" onClick={nextGolden} title="Next Stock Opportunity">
+                          <ChevronRight size={12} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Stock Ticker Select Dropdown */}
+                    <select
+                      className="golden-stock-select font-mono"
+                      value={activeGoldenSignal.symbol}
+                      onChange={(e) => {
+                        const foundIdx = goldenSignals.findIndex(s => s.symbol === e.target.value)
+                        if (foundIdx !== -1) setGoldenIndex(foundIdx)
+                      }}
+                    >
+                      {goldenSignals.map(s => (
+                        <option key={s.symbol} value={s.symbol}>
+                          {s.symbol} ({s.golden_opportunity?.conviction_score || 90}% Win Rate)
+                        </option>
+                      ))}
+                    </select>
+
+                    <span className="golden-price">${parseFloat(activeGoldenSignal.close_price).toFixed(2)}</span>
+                    <span className="golden-conviction-pill">
+                      {activeGoldenSignal.golden_opportunity?.conviction_score || 96}% Conviction
+                    </span>
+                  </div>
+
+                  <div className="golden-alert-center">
+                    <span className="golden-meta-item">
+                      <span className="meta-lbl">HOLD:</span>
+                      <span className="meta-val highlight">{activeGoldenSignal.golden_opportunity?.holding_duration || '3 – 7 Days'}</span>
+                    </span>
+                    <span className="golden-meta-item">
+                      <span className="meta-lbl">TARGET:</span>
+                      <span className="meta-val profit">{activeGoldenSignal.golden_opportunity?.take_profit_target || '+$12.5%'}</span>
+                    </span>
+                    <span className="golden-meta-item">
+                      <span className="meta-lbl">STOP:</span>
+                      <span className="meta-val loss">{activeGoldenSignal.golden_opportunity?.stop_loss_level || '-3.2%'}</span>
+                    </span>
+                  </div>
+
+                  <div className="golden-alert-right">
+                    <button
+                      className="golden-inspect-btn"
+                      onClick={() => setSelectedTicker(activeGoldenSignal.symbol)}
+                      title={`Inspect ${activeGoldenSignal.symbol} Golden Trade Setup`}
+                    >
+                      <span>Inspect</span>
+                      <ArrowUpRight size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {intelView === 'playbook' && (
+                <DailyTradePlaybook
+                  signals={signals}
+                  onSelectAsset={(sym) => setSelectedTicker(sym)}
+                  onOpenAcademy={(ast) => {
+                    setAcademySignal(ast)
+                    setIsAcademyOpen(true)
+                  }}
+                  lang={lang}
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
 
 
 
