@@ -49,7 +49,8 @@ import {
   FileText,
   Star,
   GraduationCap,
-  Globe
+  Globe,
+  Award
 } from 'lucide-react'
 
 
