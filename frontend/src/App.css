@@ -9436,3 +9436,160 @@ a[title*="TradingView"], #tv-attr-logo, .tv-lightweight-charts-watermark {
   box-shadow: none;
   border-radius: 0;
 }
+
+/* ==========================================================================
+   MULTI-ASSET INVESTMENT PLAYBOOK (STOCKS, FUNDS/ETFS, CRYPTO)
+   ========================================================================== */
+.playbook-category-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #f1f5f9;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.playbook-cat-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.playbook-cat-btn:hover {
+  color: #0f172a;
+}
+
+.playbook-cat-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.playbook-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.playbook-date-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.ticker-sym-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ticker-type-pill {
+  font-size: 0.58rem;
+  font-weight: 800;
+  background: #0284c7;
+  color: #ffffff;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.playbook-nav-arrows {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 1px 3px;
+}
+
+.playbook-nav-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+.playbook-nav-btn:hover {
+  color: #0f172a;
+}
+
+.playbook-nav-count {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #475569;
+  padding: 0 3px;
+}
+
+.ticker-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+}
+
+.playbook-hold-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.step-item.rr-ratio {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+}
+
+.step-item.rr-ratio .step-val {
+  color: #ca8a04;
+}
+
+.playbook-reason-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.68rem;
+}
+
+.reason-title {
+  display: block;
+  font-weight: 800;
+  color: #0284c7;
+  font-size: 0.6rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.15rem;
+}
+
+.reason-text {
+  margin: 0;
+  color: #334155;
+  line-height: 1.35;
+}
+
+.playbook-btns-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

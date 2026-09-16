@@ -806,7 +806,12 @@ function App() {
 
   const goldenSignals = useMemo(() => {
     const goldens = signals.filter(s => s.golden_opportunity?.is_golden_opportunity)
-    return goldens.length > 0 ? goldens : signals
+    const list = goldens.length > 0 ? goldens : signals
+    return [...list].sort((a, b) => {
+      const scoreA = a.golden_opportunity?.conviction_score || 0
+      const scoreB = b.golden_opportunity?.conviction_score || 0
+      return scoreB - scoreA
+    })
   }, [signals])
 
   const [goldenIndex, setGoldenIndex] = useState(0)
@@ -1537,7 +1542,7 @@ function App() {
                     >
                       {goldenSignals.map(s => (
                         <option key={s.symbol} value={s.symbol}>
-                          {s.symbol} ({s.golden_opportunity?.conviction_score || 90}% Win Rate)
+                          [{s.asset_type || 'Stock'}] {s.symbol} — {s.golden_opportunity?.conviction_score || 90}% Win Rate
                         </option>
                       ))}
                     </select>

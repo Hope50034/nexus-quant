@@ -552,9 +552,19 @@ def format_signal_with_live_data(signal):
     golden_meta = compute_golden_opportunity_meta(signal.symbol, live_q['current_price'], macd_val, macd_sig, radar)
     candles = fetch_recent_candles_for_symbol(signal.symbol, limit=365)
 
+    sym = signal.symbol.upper().strip()
+    if sym in ['BTC-USD', 'ETH-USD', 'SOL-USD'] or '-USD' in sym:
+        computed_type = 'Crypto'
+    elif sym in ['SPY', 'QQQ', 'DIA', 'IWM']:
+        computed_type = 'ETF'
+    elif sym in ['GLD', 'SLV', 'USO', 'UNG']:
+        computed_type = 'Commodity'
+    else:
+        computed_type = getattr(signal, 'asset_type', 'Stock') or 'Stock'
+
     return {
         'symbol': signal.symbol,
-        'asset_type': getattr(signal, 'asset_type', 'Stock'),
+        'asset_type': computed_type,
         'current_price': live_q['current_price'],
         'previous_close': live_q['previous_close'],
         'close_price': live_q['current_price'],
