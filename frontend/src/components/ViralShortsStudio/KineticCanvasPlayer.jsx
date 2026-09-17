@@ -185,9 +185,12 @@ export default function KineticCanvasPlayer({
     const render = () => {
       frameCount++
 
-      // Update current playback time from audio
+      // Update current playback time from audio (throttled to ~8 FPS to prevent React re-render thrashing)
       if (audioRef.current && isPlaying) {
-        setCurrentTime(audioRef.current.currentTime)
+        const audioTime = audioRef.current.currentTime
+        if (frameCount % 8 === 0) {
+          setCurrentTime(audioTime)
+        }
       }
 
       const w = canvas.width
