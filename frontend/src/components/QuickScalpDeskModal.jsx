@@ -49,6 +49,7 @@ export default function QuickScalpDeskModal({
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [statusMsg, setStatusMsg] = useState(null)
+  const [autoSyncMarket, setAutoSyncMarket] = useState(false)
 
   useEffect(() => {
     if (initialSymbol) {
@@ -84,6 +85,29 @@ export default function QuickScalpDeskModal({
     }
     return () => clearInterval(interval)
   }, [isTimerRunning])
+
+  // Auto-sync live option price from market every 10s if enabled
+  useEffect(() => {
+    let interval = null
+    if (autoSyncMarket && isOpen) {
+      interval = setInterval(() => {
+        fetchScalpContracts(symbol, budget, selectedExpiration)
+      }, 10000)
+    }
+    return () => clearInterval(interval)
+  }, [autoSyncMarket, isOpen, symbol, budget, selectedExpiration])
+
+  // Sync active contract price whenever new market data arrives
+  useEffect(() => {
+    if (scalpData && activeTrade) {
+      const match = scalpData.contracts?.find(
+        (c) => c.strike === activeTrade.strike && c.type === activeTrade.type
+      )
+      if (match && match.price_per_share) {
+        setTradeCurrentPrice(match.price_per_share)
+      }
+    }
+  }, [scalpData, activeTrade])
 
   const fetchScalpContracts = async (targetSym, targetBudget, targetExp = selectedExpiration) => {
     setLoading(true)
@@ -441,26 +465,49 @@ export default function QuickScalpDeskModal({
                       <span className="tracker-title">LIVE SCALP POSITION MONITOR & SELL SIGNALS</span>
                     </div>
 
-                    <div className="timer-controls">
-                      <Clock size={13} style={{ color: isTimeLimitWarning ? '#ef4444' : '#0284c7' }} />
-                      <span className={`timer-digits ${isTimeLimitWarning ? 'warning' : ''}`}>
-                        {formatTimer(elapsedSeconds)} / 15:00
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button
                         className="timer-toggle-btn"
-                        onClick={() => setIsTimerRunning(!isTimerRunning)}
-                      >
-                        {isTimerRunning ? <Pause size={12} /> : <Play size={12} />}
-                      </button>
-                      <button
-                        className="timer-toggle-btn"
-                        onClick={() => {
-                          setElapsedSeconds(0)
-                          setIsTimerRunning(true)
+                        onClick={() => setAutoSyncMarket(!autoSyncMarket)}
+                        title={autoSyncMarket ? 'Auto-syncing real market price every 10s' : 'Enable auto-sync from live market quotes'}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '3px 8px',
+                          fontSize: '0.72rem',
+                          borderRadius: '4px',
+                          background: autoSyncMarket ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                          border: `1px solid ${autoSyncMarket ? '#10b981' : 'rgba(255, 255, 255, 0.15)'}`,
+                          color: autoSyncMarket ? '#10b981' : '#94a3b8',
+                          cursor: 'pointer'
                         }}
                       >
-                        <RotateCcw size={12} />
+                        <RefreshCw size={11} className={autoSyncMarket ? 'spin-icon' : ''} />
+                        <span>{autoSyncMarket ? 'Live Auto-Sync: ON' : 'Live Auto-Sync: OFF'}</span>
                       </button>
+
+                      <div className="timer-controls">
+                        <Clock size={13} style={{ color: isTimeLimitWarning ? '#ef4444' : '#0284c7' }} />
+                        <span className={`timer-digits ${isTimeLimitWarning ? 'warning' : ''}`}>
+                          {formatTimer(elapsedSeconds)} / 15:00
+                        </span>
+                        <button
+                          className="timer-toggle-btn"
+                          onClick={() => setIsTimerRunning(!isTimerRunning)}
+                        >
+                          {isTimerRunning ? <Pause size={12} /> : <Play size={12} />}
+                        </button>
+                        <button
+                          className="timer-toggle-btn"
+                          onClick={() => {
+                            setElapsedSeconds(0)
+                            setIsTimerRunning(true)
+                          }}
+                        >
+                          <RotateCcw size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
