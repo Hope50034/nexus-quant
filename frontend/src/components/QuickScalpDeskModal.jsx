@@ -51,6 +51,56 @@ export default function QuickScalpDeskModal({
   const [statusMsg, setStatusMsg] = useState(null)
   const [autoSyncMarket, setAutoSyncMarket] = useState(false)
 
+  const [contractQty, setContractQty] = useState(1)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+
+  const playSignalSound = (type) => {
+    if (!soundEnabled) return
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      if (type === 'PROFIT') {
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime)
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1)
+        gain.gain.setValueAtTime(0.15, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35)
+        osc.start()
+        osc.stop(ctx.currentTime + 0.35)
+      } else if (type === 'STOP') {
+        osc.frequency.setValueAtTime(329.63, ctx.currentTime)
+        osc.frequency.setValueAtTime(220, ctx.currentTime + 0.1)
+        gain.gain.setValueAtTime(0.2, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+        osc.start()
+        osc.stop(ctx.currentTime + 0.4)
+      }
+    } catch (e) {}
+  }
+
+  const getMarketSession = () => {
+    const now = new Date()
+    const estString = now.toLocaleString("en-US", { timeZone: "America/New_York" })
+    const estDate = new Date(estString)
+    const day = estDate.getDay()
+    const timeInMins = estDate.getHours() * 60 + estDate.getMinutes()
+
+    if (day === 0 || day === 6) {
+      return { isOpen: false, label: 'WEEKEND (CLOSED)' }
+    }
+    if (timeInMins >= 570 && timeInMins < 960) {
+      return { isOpen: true, label: 'US MARKET OPEN (LIVE)' }
+    }
+    if (timeInMins >= 240 && timeInMins < 570) {
+      return { isOpen: false, label: 'PRE-MARKET (OPENS 9:30 AM EST)' }
+    }
+    return { isOpen: false, label: 'AFTER-HOURS (SETTLED)' }
+  }
+
   useEffect(() => {
     if (initialSymbol) {
       setSymbol(initialSymbol)
@@ -154,8 +204,8 @@ export default function QuickScalpDeskModal({
   if (!isOpen) return null
 
   // Calculate live active scalp metrics
-  const costTotal = Math.round(tradeEntryPrice * 100)
-  const currentTotal = Math.round(tradeCurrentPrice * 100)
+  const costTotal = Math.round(tradeEntryPrice * 100 * contractQty)
+  const currentTotal = Math.round(tradeCurrentPrice * 100 * contractQty)
   const pnlDollars = currentTotal - costTotal
   const pnlPercent = tradeEntryPrice > 0 ? ((tradeCurrentPrice - tradeEntryPrice) / tradeEntryPrice) * 100 : 0
 
@@ -167,6 +217,17 @@ export default function QuickScalpDeskModal({
   const isTarget2Hit = tradeCurrentPrice >= target2Price
   const isStopLossHit = tradeCurrentPrice <= stopLossPrice
   const isTimeLimitWarning = elapsedSeconds >= 15 * 60 // 15 minutes
+
+  const marketSession = getMarketSession()
+
+  // Audio alert triggers when price hits profit or stop
+  useEffect(() => {
+    if (isTarget2Hit || isTarget1Hit) {
+      playSignalSound('PROFIT')
+    } else if (isStopLossHit) {
+      playSignalSound('STOP')
+    }
+  }, [isTarget1Hit, isTarget2Hit, isStopLossHit])
 
   // Webull URL
   const cleanSym = symbol.replace('-USD', '').toLowerCase()
@@ -199,6 +260,21 @@ export default function QuickScalpDeskModal({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <h2 className="scalp-title">0DTE $30 Quick Scalp Terminal & Sell Signals</h2>
                   <span className="scalp-badge">MINUTE SCALPER ENGINE</span>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '0.70rem',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    background: marketSession.isOpen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(148, 163, 184, 0.12)',
+                    border: `1px solid ${marketSession.isOpen ? '#10b981' : 'rgba(148, 163, 184, 0.3)'}`,
+                    color: marketSession.isOpen ? '#10b981' : '#94a3b8',
+                    fontWeight: 700
+                  }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: marketSession.isOpen ? '#10b981' : '#94a3b8' }} />
+                    {marketSession.label}
+                  </span>
                 </div>
                 <p className="scalp-sub">
                   Finds real contracts under your budget with automated exit signals: Lock +25% profit or cut at -22% before theta burns.
@@ -564,6 +640,42 @@ export default function QuickScalpDeskModal({
                       <span className="sub-label">YOUR CONTRACT:</span>
                       <div className="contract-preview-badge">
                         {symbol} {scalpData.top_recommendation?.expiration} ${scalpData.top_recommendation?.strike} {scalpData.top_recommendation?.type}
+                      </div>
+
+                      {/* Quantity & Sound Bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0.35rem 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>QTY:</span>
+                          {[1, 2, 3, 5].map((q) => (
+                            <button
+                              key={q}
+                              className={`b-pill ${contractQty === q ? 'active' : ''}`}
+                              onClick={() => setContractQty(q)}
+                              style={{ padding: '2px 7px', fontSize: '0.70rem', minWidth: '26px' }}
+                            >
+                              {q}x
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() => setSoundEnabled(!soundEnabled)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'none',
+                            border: 'none',
+                            color: soundEnabled ? '#10b981' : '#64748b',
+                            fontSize: '0.72rem',
+                            cursor: 'pointer',
+                            padding: '2px 4px'
+                          }}
+                          title={soundEnabled ? 'Audio alert enabled for sell signals' : 'Audio alert muted'}
+                        >
+                          <Bell size={12} />
+                          <span>{soundEnabled ? 'Chime ON' : 'Muted'}</span>
+                        </button>
                       </div>
 
                       <div className="price-inputs-row">
