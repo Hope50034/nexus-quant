@@ -78,6 +78,33 @@ export default function KineticCanvasPlayer({
   const [isRecording, setIsRecording] = useState(false)
   const [recordProgress, setRecordProgress] = useState(0)
   const [copiedSection, setCopiedSection] = useState(null)
+  const [enableBassDrop, setEnableBassDrop] = useState(true)
+
+  // Cinematic Sub-Bass Impact Synthesizer for 0-3s Hook Retention
+  const playCinematicBassDrop = () => {
+    if (!enableBassDrop) return
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      const ctx = new AudioCtx()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(110, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(36, ctx.currentTime + 1.1)
+
+      gain.gain.setValueAtTime(0.35, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.3)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 1.4)
+    } catch (e) {
+      console.warn('Audio effect note:', e)
+    }
+  }
 
   // Initialize Audio element
   useEffect(() => {
@@ -111,6 +138,9 @@ export default function KineticCanvasPlayer({
       if (videoRef.current) videoRef.current.pause()
       setIsPlaying(false)
     } else {
+      if (currentTime < 0.5) {
+        playCinematicBassDrop()
+      }
       audioRef.current.play()
       if (videoRef.current) videoRef.current.play().catch(() => {})
       setIsPlaying(true)
@@ -589,6 +619,31 @@ export default function KineticCanvasPlayer({
             title="Restart to Beginning"
           >
             <RotateCcw size={16} />
+          </button>
+
+          <button
+            onClick={() => {
+              const nextState = !enableBassDrop
+              setEnableBassDrop(nextState)
+              if (nextState) playCinematicBassDrop()
+            }}
+            style={{
+              background: enableBassDrop ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+              border: `1px solid ${enableBassDrop ? '#38bdf8' : '#334155'}`,
+              color: enableBassDrop ? '#38bdf8' : '#64748b',
+              padding: '4px 9px',
+              borderRadius: '12px',
+              fontSize: '0.70rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            title="Cinematic Sub-Bass rumble on 0-3s hook to maximize viewer retention"
+          >
+            <Volume2 size={13} />
+            <span>{enableBassDrop ? 'Bass: ON' : 'Bass: OFF'}</span>
           </button>
 
           <span style={{ fontSize: '0.80rem', color: '#94a3b8', minWidth: '70px', textAlign: 'center' }}>

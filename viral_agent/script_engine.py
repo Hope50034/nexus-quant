@@ -9,94 +9,101 @@ except ImportError:
 
 
 PROFITABLE_NICHES = {
-    'finance_options': {
-        'id': 'finance_options',
-        'name': '💰 Wall Street Lore & 0DTE Options',
-        'rpm': '$12 - $25 RPM (Highest AdSense & $30-$100 Broker Affiliates)',
-        'target_audience': 'Retail traders, side-hustlers, crypto/stocks beginners',
-        'affiliate_type': 'Broker Signup (Webull / Robinhood Free Stocks)',
-        'affiliate_copy': '🎁 Grab up to 12 FREE Stocks (worth up to $3,000) on Webull: Link in bio/pinned comment!'
+    'psychology_secrets': {
+        'id': 'psychology_secrets',
+        'name': '🧠 Dark Psychology & Body Language',
+        'rpm': '1M - 5M Organic Views (Fastest Viral Growth)',
+        'target_audience': 'Curiosity seekers, broad viral audience, students, thinkers',
+        'affiliate_type': '100% Zero Promotion • Pure Algorithm Views',
+        'affiliate_copy': '👁️ Comment your thoughts below & save this video before you forget.'
+    },
+    'stoic_mindset': {
+        'id': 'stoic_mindset',
+        'name': '🏛️ Stoic Wisdom & Unbreakable Mindset',
+        'rpm': 'High Retention & Lifelong Re-Watchability',
+        'target_audience': 'Entrepreneurs, high-performers, self-improvement seekers',
+        'affiliate_type': '100% Zero Promotion • Pure AdSense Cash',
+        'affiliate_copy': '🛡️ Save this for when your discipline is tested. Drop a 100 below.'
     },
     'ai_future_tech': {
         'id': 'ai_future_tech',
-        'name': '🤖 AI & Future Tech Breakthroughs',
-        'rpm': '$8 - $16 RPM',
-        'target_audience': 'Tech enthusiasts, developers, productivity junkies',
-        'affiliate_type': 'AI Tools & SaaS Subscriptions',
-        'affiliate_copy': '⚡ The exact AI tools I use to automate this: Check the link in bio!'
+        'name': '🤖 Mind-Blowing AI & Future Tech Facts',
+        'rpm': 'Highest Advertiser Tech CPM on YouTube',
+        'target_audience': 'Tech enthusiasts, curious minds, innovators',
+        'affiliate_type': '100% Zero Promotion • Pure Discovery',
+        'affiliate_copy': '⚡ Will AI replace this next? Drop your prediction in the comments.'
     },
-    'psychology_secrets': {
-        'id': 'psychology_secrets',
-        'name': '🧠 Dark Psychology & Human Secrets',
-        'rpm': '$5 - $12 RPM (Fastest Organic Views: 1M+ views)',
-        'target_audience': 'Broad viral audience, students, gamers',
-        'affiliate_type': 'Self-improvement & Books/Audible',
-        'affiliate_copy': '📚 Read the top 5 psychology books for 100% free with Audible: Link in bio!'
-    },
-    'billionaire_hustle': {
-        'id': 'billionaire_hustle',
-        'name': '💎 Billionaire Mindset & Money Secrets',
-        'rpm': '$9 - $18 RPM',
-        'target_audience': 'Entrepreneurs, investors, young hustlers',
-        'affiliate_type': 'Trading & High-Ticket Courses/Tools',
-        'affiliate_copy': '🚀 Start your first automated cash flow asset today: Free guide in bio!'
+    'subconscious_mind': {
+        'id': 'subconscious_mind',
+        'name': '🔮 Subconscious Mind Tricks & Secrets',
+        'rpm': 'Ultra-High Loop Completion Rate (>90% Retention)',
+        'target_audience': 'Psychology fans, mystery lovers, daily scrollers',
+        'affiliate_type': '100% Zero Promotion • Viral Re-Watch Loop',
+        'affiliate_copy': '🔄 Most people miss the first clue. Watch this one more time to catch it.'
     }
 }
 
 
 CURATED_VIRAL_STORIES = {
-    'finance_options': [
+    'psychology_secrets': [
         {
-            'title': "How a 20-Year-Old Made $400 in 15 Minutes on QQQ",
-            'hook': "Most people think you need $10,000 to trade options. But here's what Wall Street hides.",
-            'body': "Every morning at 9:30 AM Eastern, the NASDAQ ETF QQQ prints massive opening volatility. While amateur traders gamble on cheap penny stocks, institutional algos buy 0DTE contracts for under thirty dollars. When the 9 EMA crosses above the 21 EMA with institutional volume, momentum rips. One single twenty-seven dollar contract can jump to forty-five dollars in five minutes flat. That's a sixty percent return before you even finish your morning coffee.",
-            'cta': "Never risk money without an exact stop loss. Claim up to twelve free stocks on Webull with the link in bio and practice paper trading first.",
-            'tags': ['#Shorts', '#Trading', '#QQQ', '#OptionsTrading', '#StockMarket', '#Webull']
+            'title': "3 Body Language Signs Someone Is Subconsciously Attracted to You",
+            'hook': "Here are three subconscious body language signs that someone is secretly attracted to you.",
+            'body': "First, the pupil dilation test. When someone looks at a person they deeply desire, their pupils involuntarily dilate up to forty-five percent to take in more visual detail. Second, foot direction. Even if they are talking to someone else, their feet will subconsciously point directly toward the person they actually care about. Third, the mirroring reflex. Notice if they take a sip of water or cross their legs right after you do.",
+            'cta': "Save this video before you forget it, and check their feet next time you talk to them.",
+            'tags': ['#Psychology', '#BodyLanguage', '#HumanBehavior', '#PsychologyTricks', '#Shorts']
         },
         {
-            'title': "The $30 Scalper Strategy Wall Street Doesn't Want You to Know",
-            'hook': "Stop losing money on zero-day options! You're making this one fatal mistake.",
-            'body': "Ninety percent of retail option buyers hold their contracts until afternoon theta burns them to absolute zero. The winning secret? You never hold longer than fifteen minutes. Set your Take Profit at plus twenty-five percent, take your hard stop at minus twenty-two percent, and bank your cash immediately. Three disciplined scalps a week beats everyday gambling every single time.",
-            'cta': "Comment 'SCALP' below and grab your free stocks with the pinned link before market opens tomorrow.",
-            'tags': ['#Shorts', '#OptionScalping', '#DayTrading', '#FinancialFreedom', '#Stocks']
+            'title': "The 3-Second FBI Lie Detection Rule",
+            'hook': "FBI interrogators use this exact three-second test, and it works every single time.",
+            'body': "When someone is asked an unexpected question and fabricates a lie, their brain experiences an instant cognitive overload. Notice their blink rate. Normal speech has twenty blinks per minute, but during a deceptive statement, their blinking freezes for three seconds, followed by a rapid burst of eight to ten blinks to relieve brain stress. Also, honest people use asymmetrical hand gestures, while liars freeze their hands or touch their collarbone.",
+            'cta': "Test this on someone today, and comment if you've ever caught someone freezing up like this.",
+            'tags': ['#FBIFacts', '#LieDetection', '#PsychologySecrets', '#MentalTricks', '#Shorts']
+        }
+    ],
+    'stoic_mindset': [
+        {
+            'title': "Marcus Aurelius' Rule for Dealing with Toxic People",
+            'hook': "Two thousand years ago, the most powerful man in the world wrote this in his private journal.",
+            'body': "Every morning, tell yourself: The people I deal with today will be meddling, ungrateful, arrogant, dishonest, and jealous. They are like this because they cannot distinguish good from evil. But you can. You have seen the beauty of good, and the ugliness of evil. None of them can hurt you, because no one can force you into their negativity. Do not waste a single second arguing with someone committed to misunderstanding you.",
+            'cta': "Save this quote for when life tests your patience today. Drop a hundred below if you needed to hear this.",
+            'tags': ['#MarcusAurelius', '#Stoicism', '#Mindset', '#SelfDiscipline', '#Wisdom', '#Shorts']
+        },
+        {
+            'title': "Why Silence Is the Most Lethal Power in Any Room",
+            'hook': "The loudest person in the room is always the weakest. Here is why high-value people stay silent.",
+            'body': "When someone insults you or tries to provoke a reaction, immediate anger hands them full psychological control. But when you remain completely still, look directly into their left eye, and say nothing for four seconds, their adrenaline crashes and anxiety takes over. Silence forces other people to reveal their hand while keeping your motives invisible.",
+            'cta': "Never explain yourself to people who don't deserve your words. Save this and practice it.",
+            'tags': ['#PowerMoves', '#DarkPsychology', '#MindsetShift', '#SelfControl', '#Shorts']
         }
     ],
     'ai_future_tech': [
         {
-            'title': "This New AI Agent Just Replaced a 5-Person Marketing Agency",
-            'hook': "If you're still paying five thousand dollars for video editing, you're lighting cash on fire.",
-            'body': "A new autonomous AI pipeline just dropped that scrapes viral trends, writes high-retention psychological scripts, synthesizes human voice narration, and renders vertical short-form video in under twenty seconds. What used to take a creative team forty hours now runs on a laptop while you sleep.",
-            'cta': "Follow for daily AI automation blueprints, and grab the free source code link in the description.",
-            'tags': ['#AI', '#ArtificialIntelligence', '#TechNews', '#Automation', '#Shorts']
+            'title': "What AI Will Look Like by 2028 Will Shock You",
+            'hook': "What tech giants are testing behind closed doors right now will completely blow your mind.",
+            'body': "Within twenty-four months, humanoid robotics powered by neural vision models will handle physical household chores autonomously. Autonomous AI agents are already writing, debugging, and deploying enterprise software with zero human intervention. The people who understand how to orchestrate these models will build billion-dollar one-person companies.",
+            'cta': "Do you think artificial general intelligence arrives sooner than 2028? Drop your prediction below.",
+            'tags': ['#AI', '#ArtificialIntelligence', '#FutureTech', '#TechNews', '#Shorts']
         }
     ],
-    'psychology_secrets': [
+    'subconscious_mind': [
         {
-            'title': "3 Psychological Tricks to Tell If Someone Is Lying to You",
-            'hook': "FBI interrogators use this exact three-second test, and it works every single time.",
-            'body': "First, watch their blink rate. When someone tells a fabricated story, their cognitive load spikes and blinking drops to almost zero, followed by a rapid burst of eight to ten blinks. Second, notice their hand placement. Truthful people open their palms, while liars subconsciously conceal their hands or touch their necks to self-soothe.",
-            'cta': "Save this video before you need it, and comment if you've seen someone do this.",
-            'tags': ['#Psychology', '#HumanBehavior', '#BodyLanguage', '#PsychologyTricks', '#Shorts']
-        }
-    ],
-    'billionaire_hustle': [
-        {
-            'title': "The 'Rule of 72' That Made Warren Buffett a Billionaire",
-            'hook': "Warren Buffett made ninety-nine percent of his wealth after his fiftieth birthday. Here's the math.",
-            'body': "Take the number seventy-two and divide it by your annual rate of return. That tells you the exact number of years it takes to double your entire net worth. At twelve percent annual return, your money doubles every six years. One thousand dollars becomes eight thousand in eighteen years, and sixty-four thousand in thirty-six years with zero extra deposits.",
-            'cta': "Start compounding your wealth right now. Claim your free starter stocks using the link in bio.",
-            'tags': ['#WarrenBuffett', '#MoneyMindset', '#Investing', '#CompoundInterest', '#Shorts']
+            'title': "The 'Spotlight Effect' Mind Trick That Will Cure Your Social Anxiety",
+            'hook': "Here is a psychological fact that will instantly cure your social anxiety in thirty seconds.",
+            'body': "You believe that whenever you walk into a crowded room, everyone is judging your clothes, your posture, and your mistakes. But psychological studies prove that over ninety percent of people are completely absorbed in their own insecurities. Nobody is thinking about you because they are too busy worrying about what you think of them. You are totally free.",
+            'cta': "Re-watch this whenever you feel self-conscious. Follow for daily psychological breakthroughs.",
+            'tags': ['#SocialAnxiety', '#MentalHealth', '#PsychologyFacts', '#Mindset', '#Shorts']
         }
     ]
 }
 
 
-def generate_viral_script(niche_key: str = 'finance_options', custom_prompt: str = None) -> dict:
+def generate_viral_script(niche_key: str = 'psychology_secrets', custom_prompt: str = None) -> dict:
     """
     Generates a viral short-form video package with hook, body, CTA, and affiliate copy.
     Falls back to high-converting curated viral scripts if Gemini API is unreachable.
     """
-    niche_info = PROFITABLE_NICHES.get(niche_key, PROFITABLE_NICHES['finance_options'])
+    niche_info = PROFITABLE_NICHES.get(niche_key, PROFITABLE_NICHES['psychology_secrets'])
     api_key = os.environ.get('GEMINI_API_KEY')
 
     if GENAI_AVAILABLE and api_key and custom_prompt:
@@ -149,7 +156,7 @@ Strict format:
             pass
 
     # Curated high-converting blueprint fallback
-    pool = CURATED_VIRAL_STORIES.get(niche_key, CURATED_VIRAL_STORIES['finance_options'])
+    pool = CURATED_VIRAL_STORIES.get(niche_key, CURATED_VIRAL_STORIES['psychology_secrets'])
     chosen = random.choice(pool)
     full_script = f"{chosen['hook']} {chosen['body']} {chosen['cta']}".strip()
 

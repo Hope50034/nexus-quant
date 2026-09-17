@@ -28,7 +28,7 @@ export default function ViralStudioModal({
 }) {
   const [activeStep, setActiveStep] = useState(1) // 1: Niche, 2: Script, 3: Voice, 4: Video
   const [niches, setNiches] = useState([])
-  const [selectedNiche, setSelectedNiche] = useState('finance_options')
+  const [selectedNiche, setSelectedNiche] = useState('psychology_secrets')
   const [customPrompt, setCustomPrompt] = useState('')
 
   // Script State
@@ -155,22 +155,22 @@ export default function ViralStudioModal({
                 borderRadius: '12px',
                 fontWeight: 700
               }}>
-                CONTENT-TO-CASH ENGINE
+                0% PROMOTION • PURE AD REVENUE
               </span>
               <span style={{
                 fontSize: '0.65rem',
-                background: 'rgba(234, 179, 8, 0.15)',
-                color: '#eab308',
-                border: '1px solid rgba(234, 179, 8, 0.3)',
+                background: 'rgba(56, 189, 248, 0.15)',
+                color: '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
                 padding: '2px 8px',
                 borderRadius: '12px',
                 fontWeight: 700
               }}>
-                $0 API COST
+                100% RE-WATCH LOOPS
               </span>
             </div>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>
-              Autonomous 9:16 vertical video factory with animated kinetic subtitles & neural voiceover.
+              Faceless high-retention vertical video factory engineered for YouTube Shorts & TikTok ad monetization.
             </p>
           </div>
         </div>
