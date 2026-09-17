@@ -51,7 +51,8 @@ import {
   GraduationCap,
   Globe,
   Award,
-  Briefcase
+  Briefcase,
+  Video
 } from 'lucide-react'
 
 
@@ -85,6 +86,7 @@ import AIMentorModal from './components/AIMentorModal'
 import PaperTradingModal from './components/PaperTradingModal'
 import AIBrainFusionModal from './components/AIBrainFusionModal'
 import QuickScalpDeskModal from './components/QuickScalpDeskModal'
+import ViralStudioModal from './components/ViralShortsStudio/ViralStudioModal'
 import { getPortfolio, calculatePortfolioStats } from './utils/paperTradingStorage'
 import BreakoutAlertsBar from './components/BreakoutAlertsBar'
 
@@ -229,6 +231,9 @@ function App() {
   // 0DTE $30 Quick Scalper Desk & Automated Exit Signals State
   const [isScalpOpen, setIsScalpOpen] = useState(false)
   const [scalpSymbol, setScalpSymbol] = useState('QQQ')
+
+  // VIRAL-AGENT Content-to-Cash Short-Form Video Factory State
+  const [isViralStudioOpen, setIsViralStudioOpen] = useState(false)
 
   // Bilingual English/Thai (EN/TH) i18n State
   const [lang, setLang] = useState(() => localStorage.getItem('kappa_lang') || 'en')
@@ -1218,6 +1223,13 @@ function App() {
         }}
       />
 
+      {/* VIRAL-AGENT Content-to-Cash Video Factory Studio Modal */}
+      <ViralStudioModal
+        isOpen={isViralStudioOpen}
+        onClose={() => setIsViralStudioOpen(false)}
+        API_BASE_URL={API_BASE_URL}
+      />
+
 
 
 
@@ -1431,6 +1443,22 @@ function App() {
             <Zap size={13} style={{ color: '#000000' }} />
             <span>$30 Scalp Desk</span>
             <span className="scalp-pulse-chip">SELL SIGNALS</span>
+          </button>
+
+          {/* VIRAL-AGENT Video Factory Launcher Button */}
+          <button
+            className="quick-scalp-trigger-btn font-mono"
+            onClick={() => setIsViralStudioOpen(true)}
+            style={{
+              background: 'linear-gradient(135deg, #0284c7, #6366f1)',
+              borderColor: '#818cf8',
+              color: '#ffffff'
+            }}
+            title="Open VIRAL-AGENT Faceless Short-Form Video & Content-to-Cash Factory"
+          >
+            <Video size={13} style={{ color: '#ffffff' }} />
+            <span style={{ color: '#ffffff', fontWeight: 800 }}>Viral Video Factory</span>
+            <span className="scalp-pulse-chip" style={{ background: '#eab308', color: '#000' }}>$$$ CASH ENGINE</span>
           </button>
 
           {/* Institutional Quant Tools Dropdown Popover */}
