@@ -13,11 +13,21 @@ import {
   Command,
   CornerDownLeft,
   PieChart,
-  ShieldAlert
+  ShieldAlert,
+  Cpu
 } from 'lucide-react'
 
 // Defined Categories and Command Handlers
 export const COMMAND_LIST = [
+  // AI Confluence Brain
+  {
+    id: 'ai-brain',
+    category: 'Analysis & AI',
+    label: 'Open AI Brain (Fastest News + Technical Confluence)',
+    shortcut: 'B',
+    icon: Cpu,
+    action: 'OPEN_AI_BRAIN'
+  },
   // Quick Filters
   {
     id: 'filter-bullish',

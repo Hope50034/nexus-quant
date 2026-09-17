@@ -12,7 +12,10 @@ from .views import (
     OrderbookDataView,
     PortfolioOptimizerView,
     PaperTradingView,
-    PortfolioRiskAnalyticsView
+    PortfolioRiskAnalyticsView,
+    AIBrainFusionView,
+    BudgetScalpFinderView,
+    Options6MoBacktestView
 )
 
 router = DefaultRouter()
@@ -33,4 +36,7 @@ urlpatterns = [
     path('portfolio-optimizer/', PortfolioOptimizerView.as_view(), name='portfolio-optimizer'),
     path('paper-trading/', PaperTradingView.as_view(), name='paper-trading'),
     path('portfolio/risk-analytics/', PortfolioRiskAnalyticsView.as_view(), name='portfolio-risk-analytics'),
+    path('brain/fusion/', AIBrainFusionView.as_view(), name='ai-brain-fusion'),
+    path('options/scalp-finder/', BudgetScalpFinderView.as_view(), name='budget-scalp-finder'),
+    path('options/backtest-6mo/', Options6MoBacktestView.as_view(), name='options-backtest-6mo'),
 ]

@@ -35,7 +35,7 @@ export default function NewsSentimentModal({
       {
         id: 2,
         symbol: 'BTC-USD',
-        title: 'Bitcoin breaks $76,000 all-time high following institutional ETF net inflows',
+        title: 'Bitcoin consolidates firmly following record institutional ETF net inflows',
         source: 'CoinDesk Quantitative',
         time: '25 mins ago',
         sentiment: 'BULLISH',
@@ -45,7 +45,7 @@ export default function NewsSentimentModal({
       {
         id: 3,
         symbol: 'QQQ',
-        title: 'Fed signals potential rate cuts as core PCE inflation cools to 2.1%',
+        title: 'Fed signals rate path stability as core PCE inflation cools to 2.1%',
         source: 'Reuters Finance',
         time: '42 mins ago',
         sentiment: 'BULLISH',
@@ -55,17 +55,17 @@ export default function NewsSentimentModal({
       {
         id: 4,
         symbol: 'TSLA',
-        title: 'Tesla Robotaxi regulatory approval delayed in European markets',
+        title: 'Tesla Robotaxi commercial expansion advances in major metropolitan markets',
         source: 'Financial Times',
         time: '1 hour ago',
-        sentiment: 'BEARISH',
-        score: -0.64,
+        sentiment: 'BULLISH',
+        score: 0.72,
         url: 'https://www.ft.com'
       },
       {
         id: 5,
         symbol: 'GLD',
-        title: 'Gold surges to $415 as central bank reserve diversification accelerates',
+        title: 'Gold holds record high territory as central bank reserve diversification accelerates',
         source: 'WSJ Commodities',
         time: '2 hours ago',
         sentiment: 'BULLISH',
@@ -75,7 +75,7 @@ export default function NewsSentimentModal({
       {
         id: 6,
         symbol: 'USO',
-        title: 'WTI Crude holds $134 as OPEC+ maintains supply discipline',
+        title: 'Crude trades steady as OPEC+ maintains strict global supply discipline',
         source: 'Energy Intelligence',
         time: '3 hours ago',
         sentiment: 'NEUTRAL',

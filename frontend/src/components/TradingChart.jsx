@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createChart, ColorType, CandlestickSeries } from 'lightweight-charts'
+import { detectSupportResistance, calculateTradeSetupLevels } from '../utils/autoChartingUtils'
 
 /**
  * Formats market price objects into the required lightweight-charts candlestick data structure.
@@ -48,7 +49,13 @@ export function formatCandleData(rawData = []) {
     })
 }
 
-export default function TradingChart({ data = [], isBuy = true, height = 160 }) {
+export default function TradingChart({ 
+  data = [], 
+  isBuy = true, 
+  height = 160,
+  showAutoLevels = true,
+  asset = null
+}) {
   const chartContainerRef = useRef(null)
   const chartRef = useRef(null)
 
@@ -129,6 +136,56 @@ export default function TradingChart({ data = [], isBuy = true, height = 160 }) 
     const candleData = formatCandleData(data)
     if (candleData.length > 0) {
       candleSeries.setData(candleData)
+
+      // Auto-Technical S/R & Trade Setup Overlays
+      if (showAutoLevels && candleData.length >= 8) {
+        const lastClose = candleData[candleData.length - 1].close
+        const sr = detectSupportResistance(candleData, lastClose)
+        const setup = calculateTradeSetupLevels(asset, candleData, lastClose)
+
+        // Draw nearest Resistance floor & Support ceiling
+        if (sr.nearestResistance) {
+          candleSeries.createPriceLine({
+            price: sr.nearestResistance.price,
+            color: '#f59e0b',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: `RES: $${sr.nearestResistance.price.toFixed(2)}`
+          })
+        }
+        if (sr.nearestSupport) {
+          candleSeries.createPriceLine({
+            price: sr.nearestSupport.price,
+            color: '#059669',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: `SUP: $${sr.nearestSupport.price.toFixed(2)}`
+          })
+        }
+
+        // Draw target and stop loss if valid
+        if (setup.targetPrice > 0 && setup.stopLossPrice > 0) {
+          candleSeries.createPriceLine({
+            price: setup.targetPrice,
+            color: '#10b981',
+            lineWidth: 1,
+            lineStyle: 1,
+            axisLabelVisible: false,
+            title: `TARGET`
+          })
+          candleSeries.createPriceLine({
+            price: setup.stopLossPrice,
+            color: '#ef4444',
+            lineWidth: 1,
+            lineStyle: 1,
+            axisLabelVisible: false,
+            title: `STOP`
+          })
+        }
+      }
+
       chart.timeScale().fitContent()
     }
 
@@ -150,7 +207,7 @@ export default function TradingChart({ data = [], isBuy = true, height = 160 }) 
       chart.remove()
       chartRef.current = null
     }
-  }, [data, isBuy, height])
+  }, [data, isBuy, height, showAutoLevels, asset])
 
   return (
     <div

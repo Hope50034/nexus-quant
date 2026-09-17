@@ -11,8 +11,12 @@ import {
   Layers,
   Sparkles,
   Sliders,
-  Check
+  Check,
+  Crosshair,
+  Target,
+  ShieldAlert
 } from 'lucide-react'
+import { detectSupportResistance, calculateTradeSetupLevels } from '../utils/autoChartingUtils'
 
 // Calculate Exponential Moving Average (EMA)
 function calculateEMA(candles, period) {
@@ -54,6 +58,8 @@ export default function FullChartModal({
   const [showEma20, setShowEma20] = useState(true)
   const [showEma50, setShowEma50] = useState(true)
   const [showVolume, setShowVolume] = useState(true)
+  const [showAutoSR, setShowAutoSR] = useState(true)
+  const [showTradeLevels, setShowTradeLevels] = useState(true)
 
   // Fetched Candles State if not passed directly
   const [fetchedCandles, setFetchedCandles] = useState([])
@@ -72,7 +78,7 @@ export default function FullChartModal({
     const fetchCandles = async () => {
       setIsLoading(true)
       try {
-        const tfParam = timeframe.toLowerCase()
+        const tfParam = timeframe === '1M' ? '1M' : timeframe.toLowerCase()
         const response = await fetch(`${API_BASE_URL || 'http://127.0.0.1:8000'}/api/candles/${symbol}/?tf=${tfParam}`)
         if (response.ok) {
           const data = await response.json()
@@ -109,14 +115,31 @@ export default function FullChartModal({
       return String(a.time).localeCompare(String(b.time))
     })
 
+    // If candles were loaded from the timeframe API, return the full resolution series
+    if (fetchedCandles && fetchedCandles.length > 0) {
+      return sorted
+    }
+
+    // Fallback slicing for raw daily history
     const tf = timeframe.toUpperCase()
-    if (tf === '1D') return sorted.slice(-2)
-    if (tf === '1W') return sorted.slice(-7)
+    if (tf === '1D') return sorted.slice(-120)
+    if (tf === '1W') return sorted.slice(-52)
     if (tf === '1M') return sorted.slice(-30)
     if (tf === '1Y') return sorted.slice(-365)
     return sorted
   }, [fetchedCandles, candleData, asset, timeframe])
 
+  // Derive Current Price and Automated Technical Analysis
+  const currentPriceNum = useMemo(() => {
+    return parseFloat(asset?.current_price || asset?.close_price || (activeCandles[activeCandles.length - 1]?.close) || 150)
+  }, [asset, activeCandles])
+
+  const technicalAnalysis = useMemo(() => {
+    if (!activeCandles || activeCandles.length === 0) return null
+    const sr = detectSupportResistance(activeCandles, currentPriceNum)
+    const setup = calculateTradeSetupLevels(asset, activeCandles, currentPriceNum)
+    return { sr, setup }
+  }, [activeCandles, asset, currentPriceNum])
 
   // ESC Key Listener
   useEffect(() => {
@@ -234,6 +257,68 @@ export default function FullChartModal({
       volumeSeries.setData(volumeData)
     }
 
+    // Auto Support & Resistance Overlays
+    if (showAutoSR && technicalAnalysis?.sr && mainSeries) {
+      // Resistance price lines (Amber/Red)
+      technicalAnalysis.sr.resistance.forEach((r) => {
+        mainSeries.createPriceLine({
+          price: r.price,
+          color: '#f59e0b',
+          lineWidth: 1.5,
+          lineStyle: 2, // Dashed
+          axisLabelVisible: true,
+          title: `${r.level} RES: $${r.price.toFixed(2)} (${r.touches}x)`
+        })
+      })
+
+      // Support price lines (Emerald)
+      technicalAnalysis.sr.support.forEach((s) => {
+        mainSeries.createPriceLine({
+          price: s.price,
+          color: '#059669',
+          lineWidth: 1.5,
+          lineStyle: 2, // Dashed
+          axisLabelVisible: true,
+          title: `${s.level} SUP: $${s.price.toFixed(2)} (${s.touches}x)`
+        })
+      })
+    }
+
+    // Auto Trade Setup Levels (TP / SL / Entry)
+    if (showTradeLevels && technicalAnalysis?.setup && mainSeries) {
+      const { entryPrice, targetPrice, stopLossPrice, targetPct, stopPct } = technicalAnalysis.setup
+      if (entryPrice > 0) {
+        mainSeries.createPriceLine({
+          price: entryPrice,
+          color: '#0284c7',
+          lineWidth: 1.5,
+          lineStyle: 0, // Solid
+          axisLabelVisible: true,
+          title: `ENTRY: $${entryPrice.toFixed(2)}`
+        })
+      }
+      if (targetPrice > 0) {
+        mainSeries.createPriceLine({
+          price: targetPrice,
+          color: '#10b981',
+          lineWidth: 2,
+          lineStyle: 2, // Dashed
+          axisLabelVisible: true,
+          title: `🎯 TARGET: $${targetPrice.toFixed(2)} (+${targetPct}%)`
+        })
+      }
+      if (stopLossPrice > 0) {
+        mainSeries.createPriceLine({
+          price: stopLossPrice,
+          color: '#ef4444',
+          lineWidth: 2,
+          lineStyle: 2, // Dashed
+          axisLabelVisible: true,
+          title: `🛑 STOP: $${stopLossPrice.toFixed(2)} (${stopPct}%)`
+        })
+      }
+    }
+
     // Subscribe to Crosshair Movement for HUD Update
     chart.subscribeCrosshairMove((param) => {
       if (!param || !param.time || !param.seriesData) {
@@ -285,7 +370,7 @@ export default function FullChartModal({
         chartInstanceRef.current = null
       }
     }
-  }, [isOpen, activeCandles, chartType, showEma20, showEma50, showVolume])
+  }, [isOpen, activeCandles, chartType, showEma20, showEma50, showVolume, showAutoSR, showTradeLevels, technicalAnalysis])
 
   if (!isOpen) return null
 
@@ -327,7 +412,9 @@ export default function FullChartModal({
                 <div className="fullchart-ticker-group">
                   <div className="ticker-badge">{assetType.toUpperCase()}</div>
                   <h2 className="ticker-symbol">{symbol}</h2>
-                  <span className="ticker-price font-mono">${parseFloat(currentPrice).toFixed(2)}</span>
+                  <span className="ticker-price font-mono">
+                    ${parseFloat(currentPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                   <span className={`ticker-change font-mono ${isBullish ? 'bullish' : 'bearish'}`}>
                     {isBullish ? '+' : ''}{parseFloat(changePct).toFixed(2)}%
                   </span>
@@ -391,6 +478,20 @@ export default function FullChartModal({
                     >
                       {showVolume && <Check size={11} />} Volume
                     </button>
+                    <button
+                      className={`overlay-pill sr-pill ${showAutoSR ? 'active' : ''}`}
+                      onClick={() => setShowAutoSR(prev => !prev)}
+                      title="Toggle Automated Support & Resistance lines"
+                    >
+                      {showAutoSR && <Check size={11} />} 🎯 Auto S/R
+                    </button>
+                    <button
+                      className={`overlay-pill tpsl-pill ${showTradeLevels ? 'active' : ''}`}
+                      onClick={() => setShowTradeLevels(prev => !prev)}
+                      title="Toggle Automated Take-Profit & Stop-Loss levels"
+                    >
+                      {showTradeLevels && <Check size={11} />} ⚡ Target & Stop
+                    </button>
                   </div>
                 </div>
 
@@ -420,6 +521,46 @@ export default function FullChartModal({
                   <span className="hud-placeholder">Hover cursor over chart canvas for dynamic OHLC inspection</span>
                 )}
               </div>
+
+              {/* Auto Technical Intelligence Strip */}
+              {technicalAnalysis && (
+                <div className="fullchart-auto-tech-bar">
+                  <div className="tech-badge">
+                    <Sparkles size={12} className="tech-sparkle-icon" />
+                    <span>AUTO TECHNICAL</span>
+                  </div>
+
+                  <div className="tech-item">
+                    <span className="tech-lbl">STRUCTURE:</span>
+                    <span className="tech-val status-pill">{technicalAnalysis.sr.status}</span>
+                  </div>
+
+                  {technicalAnalysis.sr.nearestResistance && (
+                    <div className="tech-item">
+                      <span className="tech-lbl">RESISTANCE:</span>
+                      <span className="tech-val res font-mono">
+                        ${technicalAnalysis.sr.nearestResistance.price.toFixed(2)} (+{technicalAnalysis.sr.nearestResistance.distancePct}%)
+                      </span>
+                    </div>
+                  )}
+
+                  {technicalAnalysis.sr.nearestSupport && (
+                    <div className="tech-item">
+                      <span className="tech-lbl">SUPPORT:</span>
+                      <span className="tech-val sup font-mono">
+                        ${technicalAnalysis.sr.nearestSupport.price.toFixed(2)} (-{technicalAnalysis.sr.nearestSupport.distancePct}%)
+                      </span>
+                    </div>
+                  )}
+
+                  {technicalAnalysis.setup && (
+                    <div className="tech-item">
+                      <span className="tech-lbl">R:R RATIO:</span>
+                      <span className="tech-val rr font-mono">1 : {technicalAnalysis.setup.rrRatio}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Canvas Container */}
               <div className="fullchart-canvas-container" ref={chartContainerRef} />

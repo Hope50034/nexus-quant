@@ -18,7 +18,7 @@ export default function MarketSentimentBar({ onOpenModal, API_BASE_URL = 'http:/
       {
         id: 2,
         symbol: 'BTC-USD',
-        title: 'Bitcoin breaks $76,000 all-time high following institutional ETF net inflows',
+        title: 'Bitcoin consolidates firmly with massive institutional ETF net inflows',
         source: 'CoinDesk Quantitative',
         time: '25 mins ago',
         sentiment: 'BULLISH',

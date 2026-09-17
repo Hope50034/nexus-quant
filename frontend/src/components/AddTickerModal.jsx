@@ -20,7 +20,14 @@ const SUGGESTED_TICKERS = [
   { symbol: 'SPY', name: 'SPDR S&P 500', type: 'US Equity' },
   { symbol: 'GLD', name: 'SPDR Gold Shares', type: 'Commodity' },
   { symbol: 'BTC-USD', name: 'Bitcoin', type: 'Crypto' },
+  { symbol: 'ETH-USD', name: 'Ethereum', type: 'Crypto' },
   { symbol: 'SOL-USD', name: 'Solana', type: 'Crypto' },
+  { symbol: 'XRP-USD', name: 'Ripple', type: 'Crypto' },
+  { symbol: 'TSM', name: 'Taiwan Semi', type: 'US Equity' },
+  { symbol: 'JPM', name: 'JPMorgan Chase', type: 'US Equity' },
+  { symbol: 'LLY', name: 'Eli Lilly', type: 'US Equity' },
+  { symbol: 'HOOD', name: 'Robinhood Markets', type: 'US Equity' },
+  { symbol: 'TLT', name: '20+ Yr Treasury ETF', type: 'ETF' },
 ]
 
 export default function AddTickerModal({ isOpen, onClose, onAddTicker, isSubmitting = false }) {

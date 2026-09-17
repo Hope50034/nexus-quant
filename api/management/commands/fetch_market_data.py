@@ -15,7 +15,7 @@ except ImportError:
 class Command(BaseCommand):
     help = 'Fetches live market price action from Yahoo Finance, calculates MACD/EMA indicators, and updates database signals.'
 
-    # Expanded Multi-Asset Target Ticker Universe
+    # Expanded Multi-Asset Target Ticker Universe (50+ Assets)
     TARGET_TICKERS = {
         # Tech & Megacap US Equities
         'AAPL': 'Stock',
@@ -33,15 +33,49 @@ class Command(BaseCommand):
         'ARM': 'Stock',
         'QCOM': 'Stock',
 
-        # High-Beta & Crypto-Linked Equities
+        # AI Semiconductors & Hardware
+        'TSM': 'Stock',
+        'ASML': 'Stock',
+        'MU': 'Stock',
+        'INTC': 'Stock',
+
+        # High-Growth FinTech & Next-Gen
+        'PYPL': 'Stock',
+        'SQ': 'Stock',
+        'HOOD': 'Stock',
+        'SOFI': 'Stock',
+        'UBER': 'Stock',
         'COIN': 'Stock',
         'MSTR': 'Stock',
 
-        # Major Indices & ETFs
-        'SPY': 'Stock',
-        'QQQ': 'Stock',
-        'IWM': 'Stock',
-        'DIA': 'Stock',
+        # Banking, Payments & Finance
+        'JPM': 'Stock',
+        'BAC': 'Stock',
+        'GS': 'Stock',
+        'V': 'Stock',
+        'MA': 'Stock',
+
+        # Healthcare, Energy & Value Giants
+        'LLY': 'Stock',
+        'XOM': 'Stock',
+        'CVX': 'Stock',
+        'JNJ': 'Stock',
+        'UNH': 'Stock',
+
+        # Consumer Titans
+        'WMT': 'Stock',
+        'COST': 'Stock',
+        'DIS': 'Stock',
+
+        # Major Broad & Sector Index ETFs
+        'SPY': 'ETF',
+        'QQQ': 'ETF',
+        'IWM': 'ETF',
+        'DIA': 'ETF',
+        'TLT': 'ETF',
+        'XLF': 'ETF',
+        'XLK': 'ETF',
+        'XLE': 'ETF',
 
         # Commodities & Precious Metals
         'GLD': 'Commodity',
@@ -49,10 +83,13 @@ class Command(BaseCommand):
         'USO': 'Commodity',
         'UNG': 'Commodity',
 
-        # Major Digital Assets
+        # Major Liquid Digital Assets
         'BTC-USD': 'Crypto',
         'ETH-USD': 'Crypto',
         'SOL-USD': 'Crypto',
+        'XRP-USD': 'Crypto',
+        'DOGE-USD': 'Crypto',
+        'ADA-USD': 'Crypto',
     }
 
     def handle(self, *args, **options):

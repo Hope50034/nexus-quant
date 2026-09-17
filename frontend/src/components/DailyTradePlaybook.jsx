@@ -16,7 +16,8 @@ import {
   BarChart2,
   CheckCircle2,
   Sliders,
-  DollarSign
+  DollarSign,
+  Briefcase
 } from 'lucide-react'
 import { translations } from '../i18n/translations'
 
@@ -24,6 +25,7 @@ export default function DailyTradePlaybook({
   signals = [],
   onSelectAsset,
   onOpenAcademy,
+  onOpenPaperTrading,
   lang = 'en'
 }) {
   const t = translations[lang] || translations.en
@@ -47,8 +49,8 @@ export default function DailyTradePlaybook({
       return { ALL: [], STOCK: [], ETF: [], CRYPTO: [] }
     }
 
-    const isCrypto = (s) => (s.asset_type === 'Crypto' || ['BTC-USD', 'ETH-USD', 'SOL-USD'].includes(s.symbol))
-    const isETF = (s) => (s.asset_type === 'ETF' || ['SPY', 'QQQ', 'DIA', 'IWM'].includes(s.symbol))
+    const isCrypto = (s) => (s.asset_type === 'Crypto' || (s.symbol && s.symbol.includes('-USD')))
+    const isETF = (s) => (s.asset_type === 'ETF' || ['SPY', 'QQQ', 'DIA', 'IWM', 'TLT', 'XLF', 'XLK', 'XLE'].includes(s.symbol))
     const isStock = (s) => (!isCrypto(s) && !isETF(s) && s.asset_type !== 'Commodity')
 
     // Scoring function combining conviction score, MACD delta, and trend momentum
@@ -98,15 +100,15 @@ export default function DailyTradePlaybook({
   if (!topSignal) return null
 
   const symbol = topSignal.symbol || 'NVDA'
-  const assetType = topSignal.asset_type || (['BTC-USD', 'ETH-USD', 'SOL-USD'].includes(symbol) ? 'Crypto' : ['SPY', 'QQQ', 'DIA', 'IWM'].includes(symbol) ? 'ETF' : 'Stock')
+  const assetType = topSignal.asset_type || (symbol.includes('-USD') ? 'Crypto' : ['SPY', 'QQQ', 'DIA', 'IWM', 'TLT', 'XLF', 'XLK', 'XLE'].includes(symbol) ? 'ETF' : 'Stock')
   const price = parseFloat(topSignal.current_price || topSignal.close_price || 150)
   const isBuy = (topSignal.macd || 0) >= (topSignal.macd_signal || 0)
   const golden = topSignal.golden_opportunity || {}
 
   // Realistic dynamic trade values from quantitative engine
   const convictionScore = golden.conviction_score || 94
-  const holdingDuration = golden.holding_duration || (assetType === 'Crypto' ? '1 – 3 Days (High-Beta Momentum)' : assetType === 'ETF' ? '2 – 4 Weeks (Trend Position)' : '3 – 7 Days (Swing Trade)')
-  const entryRange = golden.entry_zone || `$${(price * 0.995).toFixed(2)} – $${(price * 1.005).toFixed(2)}`
+  const holdingDuration = golden.holding_duration || (assetType === 'Crypto' ? '1 - 3 Days (High-Beta Momentum)' : assetType === 'ETF' ? '2 - 4 Weeks (Trend Position)' : '3 - 7 Days (Swing Trade)')
+  const entryRange = golden.entry_zone || `$${(price * 0.995).toFixed(2)} - $${(price * 1.005).toFixed(2)}`
   const targetText = golden.take_profit_target || `$${(price * 1.095).toFixed(2)} (+9.5%)`
   const stopText = golden.stop_loss_level || `$${(price * 0.968).toFixed(2)} (-3.2%)`
   const setupReason = golden.trade_setup_reason || (isBuy ? 'Bullish MACD Golden Cross + Above 20/50 EMA with Institutional Inflow' : 'Bearish Distribution Pattern')
@@ -242,12 +244,21 @@ export default function DailyTradePlaybook({
 
           <div className="playbook-btns-row">
             <button
+              className="follow-trade-btn"
+              onClick={() => onOpenPaperTrading?.(symbol)}
+              title="Follow this pick with $10,000 Paper Portfolio"
+            >
+              <Briefcase size={14} />
+              <span>{lang === 'th' ? `จำลองเทรด ${symbol} 💼` : `FOLLOW TRADE ${symbol} 💼`}</span>
+            </button>
+
+            <button
               className="simulate-trade-btn"
               onClick={() => onSelectAsset?.(symbol)}
               title="Open Live Quantitative Inspection Sheet & Interactive Candlestick Chart"
             >
               <Zap size={14} />
-              <span>{lang === 'th' ? `วิเคราะห์ ${symbol} เรียลไทม์ ⚡` : `INSPECT ${symbol} LIVE ⚡`}</span>
+              <span>{lang === 'th' ? `วิเคราะห์ ${symbol} ⚡` : `INSPECT ${symbol} ⚡`}</span>
             </button>
 
             <button

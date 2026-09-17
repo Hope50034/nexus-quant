@@ -7,7 +7,9 @@ import {
   ArrowDownRight,
   Maximize2,
   ChevronDown,
-  Loader2
+  Loader2,
+  Zap,
+  Cpu
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -87,7 +89,9 @@ const SignalCard = memo(({
   isVolLoading,
   candleSeries,
   trendData,
-  priceFlash
+  priceFlash,
+  onOpenOptions,
+  onOpenBrain
 }) => {
   const macdVal = parseFloat(signal.macd) || 0
   const macdSigVal = parseFloat(signal.macd_signal) || 0
@@ -250,6 +254,8 @@ const SignalCard = memo(({
               data={candleSeries}
               isBuy={isPositiveTrend}
               height={100}
+              showAutoLevels={true}
+              asset={signal}
             />
           )}
 
@@ -395,6 +401,68 @@ const SignalCard = memo(({
                 symbol={signal.symbol}
                 isBuySignal={isBuy}
               />
+
+              {!signal.symbol.includes('-USD') && (
+                <button
+                  type="button"
+                  className="open-options-modal-btn font-mono"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onOpenOptions?.(signal.symbol)
+                  }}
+                  style={{
+                    width: '100%',
+                    marginTop: '0.65rem',
+                    padding: '0.45rem 0.75rem',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem',
+                    boxShadow: '0 2px 6px rgba(139, 92, 246, 0.3)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Zap size={13} />
+                  <span>Launch 1-Day Options Payoff & Greeks Engine ({signal.symbol})</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="open-brain-modal-btn font-mono"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenBrain?.(signal.symbol)
+                }}
+                style={{
+                  width: '100%',
+                  marginTop: '0.45rem',
+                  padding: '0.45rem 0.75rem',
+                  background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  boxShadow: '0 2px 6px rgba(14, 165, 233, 0.3)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Cpu size={13} />
+                <span>AI Brain Confluence: Fastest News + Tech Radar ({signal.symbol})</span>
+              </button>
             </>
           )}
         </div>

@@ -20,7 +20,8 @@ import {
   Maximize2,
   Sliders,
   FileText,
-  Bell
+  Bell,
+  Briefcase
 } from 'lucide-react'
 import { getRiskRatingMeta } from '../utils/riskUtils'
 
@@ -96,7 +97,7 @@ function generateFallbackCandles(symbol, closePrice) {
   })
 }
 
-export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpenBacktest, onOpenAlerts, onOpenFullChart, onOpenOptions, onOpenReport, onOpenMentor, API_BASE_URL = 'http://127.0.0.1:8000' }) {
+export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpenBacktest, onOpenAlerts, onOpenFullChart, onOpenOptions, onOpenReport, onOpenMentor, onOpenPaperTrading, API_BASE_URL = 'http://127.0.0.1:8000' }) {
 
 
 
@@ -131,7 +132,7 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
   // Fetch timeframe candle series
   useEffect(() => {
     if (!asset || !symbol) return
-    const tf = selectedTimeframe.toLowerCase()
+    const tf = selectedTimeframe === '1M' ? '1M' : selectedTimeframe.toLowerCase()
     
     const fetchTfCandles = async () => {
       try {
@@ -165,12 +166,12 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
     if (intradayCandles && intradayCandles.length > 0) return intradayCandles
     if (!asset || fullCandles.length === 0) return []
     const sliceCounts = {
-      '1D': 24,
-      '1W': 7,
+      '1D': 60,
+      '1W': 52,
       '1M': 30,
       '1Y': 252
     }
-    const count = sliceCounts[selectedTimeframe] || 24
+    const count = sliceCounts[selectedTimeframe] || 60
     return fullCandles.slice(-Math.min(count, fullCandles.length))
   }, [asset, fullCandles, intradayCandles, selectedTimeframe])
 
@@ -403,8 +404,8 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
   const high52 = parseFloat((closePrice * 1.28).toFixed(2))
   const rangePct = Math.min(100, Math.max(0, ((closePrice - low52) / (high52 - low52)) * 100))
 
-  const rsiVal = symbol === 'NVDA' ? 68.4 : symbol === 'TSLA' ? 42.1 : symbol === 'BTC-USD' ? 72.8 : 58.2
-  const rsiBadge = rsiVal > 70 ? 'Overbought' : rsiVal < 30 ? 'Oversold' : 'Neutral / Bullish'
+  const rsiVal = asset?.radar?.rsi != null ? asset.radar.rsi : (symbol === 'NVDA' ? 68.4 : symbol === 'TSLA' ? 42.1 : symbol === 'BTC-USD' ? 72.8 : 58.2)
+  const rsiBadge = asset?.radar?.rsi_label || (rsiVal >= 70 ? 'Overbought' : rsiVal <= 30 ? 'Oversold' : 'Neutral / Bullish')
   const supportPrice = (closePrice * 0.94).toFixed(2)
   const resistancePrice = (closePrice * 1.08).toFixed(2)
   const obvFlow = currentIsPositive ? '+14.2M Accumulation' : '-8.5M Distribution'
@@ -532,6 +533,16 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
                 </button>
 
 
+                <button
+                  className="sync-now-btn"
+                  onClick={() => onOpenPaperTrading?.(symbol)}
+                  title="Simulate paper trade on this asset with $10K portfolio"
+                  style={{ padding: '0.3rem 0.65rem', fontSize: '0.725rem', background: '#ecfdf5', color: '#047857', borderColor: '#a7f3d0', fontWeight: 700 }}
+                >
+                  <Briefcase size={13} />
+                  <span>Paper Trade</span>
+                </button>
+
                 <button className="sheet-close-btn" onClick={onClose} title="Close (ESC)">
                   <X size={18} />
                 </button>
@@ -553,7 +564,7 @@ export default function AssetDetailSheet({ asset, onClose, volatilityData, onOpe
                   transition={{ duration: 0.15 }}
                 >
                   <div className="price-left">
-                    <span className="price-big">${currentPriceDisplay.toFixed(2)}</span>
+                    <span className="price-big">${Number(currentPriceDisplay).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     <span className="price-date">{currentDateSubtitle}</span>
                   </div>
                   <div className={`price-change-pill ${currentIsPositive ? 'positive' : 'negative'}`}>

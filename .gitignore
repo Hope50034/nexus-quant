@@ -20,3 +20,5 @@ env/
 Thumbs.db
 .vscode/
 .idea/
+scratch/
+scratch_*.json
