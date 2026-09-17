@@ -74,9 +74,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+import os
 
+# Database
+# Uses MSSQL if available (e.g. office), otherwise falls back to local sqlite3 seamlessly for home PC
 DATABASES = {
     'default': {
         'ENGINE': 'mssql',
@@ -86,6 +87,9 @@ DATABASES = {
             'driver': 'ODBC Driver 17 for SQL Server',
             'extra_params': 'Trusted_Connection=yes;TrustServerCertificate=yes;'
         },
+    } if os.environ.get('USE_MSSQL', '0') == '1' else {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
