@@ -91,7 +91,8 @@ const SignalCard = memo(({
   trendData,
   priceFlash,
   onOpenOptions,
-  onOpenBrain
+  onOpenBrain,
+  onOpenScalp
 }) => {
   const macdVal = parseFloat(signal.macd) || 0
   const macdSigVal = parseFloat(signal.macd_signal) || 0
@@ -403,35 +404,67 @@ const SignalCard = memo(({
               />
 
               {!signal.symbol.includes('-USD') && (
-                <button
-                  type="button"
-                  className="open-options-modal-btn font-mono"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onOpenOptions?.(signal.symbol)
-                  }}
-                  style={{
-                    width: '100%',
-                    marginTop: '0.65rem',
-                    padding: '0.45rem 0.75rem',
-                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.35rem',
-                    boxShadow: '0 2px 6px rgba(139, 92, 246, 0.3)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Zap size={13} />
-                  <span>Launch 1-Day Options Payoff & Greeks Engine ({signal.symbol})</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="open-scalp-card-btn font-mono"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpenScalp?.(signal.symbol)
+                    }}
+                    style={{
+                      width: '100%',
+                      marginTop: '0.65rem',
+                      padding: '0.45rem 0.75rem',
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      color: '#000000',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Zap size={13} style={{ color: '#000000' }} />
+                    <span>⚡ 0DTE $31 Quick Scalp Desk & Live Sell Signals ({signal.symbol})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="open-options-modal-btn font-mono"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpenOptions?.(signal.symbol)
+                    }}
+                    style={{
+                      width: '100%',
+                      marginTop: '0.45rem',
+                      padding: '0.45rem 0.75rem',
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 2px 6px rgba(139, 92, 246, 0.3)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Zap size={13} />
+                    <span>Launch 1-Day Options Payoff & Greeks Engine ({signal.symbol})</span>
+                  </button>
+                </>
               )}
 
               <button

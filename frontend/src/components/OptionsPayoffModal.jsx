@@ -93,7 +93,8 @@ export default function OptionsPayoffModal({
   initialSymbol = 'QQQ',
   initialStrategy = 'CALL',
   initialTargetPrice = null,
-  initialDaysToExpiry = 1
+  initialDaysToExpiry = 1,
+  onOpenQuickScalp
 }) {
   const [symbol, setSymbol] = useState(initialSymbol)
   const [strategy, setStrategy] = useState(initialStrategy || 'CALL')
@@ -454,6 +455,48 @@ export default function OptionsPayoffModal({
                     <X size={18} />
                   </button>
                 </div>
+              </div>
+
+              {/* Quick Scalp Desk Direct Shortcut Banner */}
+              <div style={{
+                margin: '0.6rem 1.25rem 0.2rem 1.25rem',
+                padding: '0.55rem 0.85rem',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                border: '1px solid #fde68a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+                boxShadow: '0 1px 4px rgba(245, 158, 11, 0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Zap size={16} style={{ color: '#d97706', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.76rem', color: '#92400e', fontWeight: 700 }}>
+                    Trading 0DTE with micro-budget ($15 - $31)? Use the Quick Scalp Desk for live +25% profit targets & stop-loss signals.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose?.()
+                    onOpenQuickScalp?.(symbol)
+                  }}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#000000',
+                    border: 'none',
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 6px rgba(217, 119, 6, 0.3)'
+                  }}
+                >
+                  ⚡ Open $31 Scalp Desk ↗
+                </button>
               </div>
 
               {/* ------------------------------------------------------------- */}

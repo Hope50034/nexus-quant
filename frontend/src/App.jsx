@@ -79,6 +79,7 @@ import NewsSentimentModal from './components/NewsSentimentModal'
 import PortfolioOptimizerModal from './components/PortfolioOptimizerModal'
 import TradingAcademyModal from './components/TradingAcademyModal'
 import DailyTradePlaybook from './components/DailyTradePlaybook'
+import DailyOptionPickGuide from './components/DailyOptionPickGuide'
 import SignalCard from './components/SignalCard'
 import { getRiskRatingMeta } from './utils/riskUtils'
 import AIMentorModal from './components/AIMentorModal'
@@ -239,9 +240,57 @@ function App() {
   }
   const t = translations[lang] || translations.en
 
-  // Intelligence Suite Active View ('golden' | 'playbook') & Collapse State
-  const [intelView, setIntelView] = useState('golden')
+  // Intelligence Suite Active View ('option_pick' | 'golden' | 'playbook') & Collapse State
+  const [intelView, setIntelView] = useState('option_pick')
   const [isIntelCollapsed, setIsIntelCollapsed] = useState(false)
+
+  // Real-time Header Market Hours Countdown State
+  const [marketClock, setMarketClock] = useState(() => {
+    const now = new Date()
+    const estString = now.toLocaleString('en-US', { timeZone: 'America/New_York' })
+    const estDate = new Date(estString)
+    const currentMins = estDate.getHours() * 60 + estDate.getMinutes()
+    const openMins = 9 * 60 + 30
+    if (currentMins < openMins) {
+      const diffSecs = (openMins - currentMins) * 60 - estDate.getSeconds()
+      const h = Math.floor(diffSecs / 3600)
+      const m = Math.floor((diffSecs % 3600) / 60)
+      const s = diffSecs % 60
+      return { isOpen: false, badgeText: 'PRE-MKT', countdown: `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s` }
+    }
+    return { isOpen: true, badgeText: 'LIVE', countdown: 'Open' }
+  })
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date()
+      const estString = now.toLocaleString('en-US', { timeZone: 'America/New_York' })
+      const estDate = new Date(estString)
+      const day = estDate.getDay()
+      const currentMins = estDate.getHours() * 60 + estDate.getMinutes()
+      const openMins = 9 * 60 + 30
+      const closeMins = 16 * 60
+
+      if (day === 0 || day === 6) {
+        setMarketClock({ isOpen: false, badgeText: 'WEEKEND', countdown: 'Opens Mon' })
+      } else if (currentMins < openMins) {
+        const diffSecs = (openMins - currentMins) * 60 - estDate.getSeconds()
+        const h = Math.floor(diffSecs / 3600)
+        const m = Math.floor((diffSecs % 3600) / 60)
+        const s = diffSecs % 60
+        setMarketClock({ isOpen: false, badgeText: 'PRE-MKT', countdown: `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s` })
+      } else if (currentMins >= openMins && currentMins < closeMins) {
+        const diffSecs = (closeMins - currentMins) * 60 - estDate.getSeconds()
+        const h = Math.floor(diffSecs / 3600)
+        const m = Math.floor((diffSecs % 3600) / 60)
+        const s = diffSecs % 60
+        setMarketClock({ isOpen: true, badgeText: 'LIVE', countdown: `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s` })
+      } else {
+        setMarketClock({ isOpen: false, badgeText: 'AFTER-HOURS', countdown: 'Closed' })
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
 
 
@@ -1145,6 +1194,10 @@ function App() {
         initialStrategy={optionsPayoffStrategy}
         initialTargetPrice={optionsPayoffTarget}
         initialDaysToExpiry={optionsPayoffDte}
+        onOpenQuickScalp={(sym) => {
+          setScalpSymbol(sym || optionsPayoffSymbol || 'QQQ')
+          setIsScalpOpen(true)
+        }}
       />
 
       {/* Monte Carlo Portfolio Risk & VaR Simulator Modal */}
@@ -1419,17 +1472,29 @@ function App() {
             <span className="brain-pulse-chip">NEWS+TECH</span>
           </button>
 
-          {/* 0DTE $30 Quick Scalper Desk & Exit Signals Button */}
+          {/* Header Live Market Open Countdown Chip */}
+          <div
+            className={`market-countdown-chip ${marketClock.isOpen ? 'live' : 'pre'} font-mono`}
+            style={{ cursor: 'pointer', padding: '0.25rem 0.6rem', fontSize: '0.68rem' }}
+            onClick={() => { setScalpSymbol('QQQ'); setIsScalpOpen(true); }}
+            title="US Market Live Countdown • Click to Open Quick Scalp Desk"
+          >
+            <span className="pulse-dot-mini" />
+            <span className="market-session-lbl">{marketClock.badgeText}:</span>
+            <span className="market-countdown-val">{marketClock.countdown}</span>
+          </div>
+
+          {/* 0DTE $31 Quick Scalper Desk & Exit Signals Button */}
           <button
             className="quick-scalp-trigger-btn font-mono"
             onClick={() => {
               setScalpSymbol('QQQ')
               setIsScalpOpen(true)
             }}
-            title="Open 0DTE $30 Quick Scalp Terminal & Automated Exit Signals"
+            title="Open 0DTE $31 Quick Scalp Terminal & Automated Exit Signals"
           >
             <Zap size={13} style={{ color: '#000000' }} />
-            <span>$30 Scalp Desk</span>
+            <span>0DTE Scalp Desk ($31)</span>
             <span className="scalp-pulse-chip">SELL SIGNALS</span>
           </button>
 
@@ -1647,6 +1712,19 @@ function App() {
         <div className="intel-suite-header font-mono">
           <div className="intel-suite-tabs">
             <button
+              className={`intel-tab-btn ${intelView === 'option_pick' ? 'active' : ''}`}
+              onClick={() => { setIntelView('option_pick'); setIsIntelCollapsed(false); }}
+              style={{
+                color: intelView === 'option_pick' ? '#d97706' : undefined,
+                fontWeight: 800
+              }}
+            >
+              <Zap size={13} className="text-amber-500" />
+              <span>🔥 #1 Option Play Today ($31)</span>
+              <span className="intel-badge-pill" style={{ background: '#10b981', color: '#fff', fontWeight: 800 }}>96% AI</span>
+            </button>
+
+            <button
               className={`intel-tab-btn ${intelView === 'golden' ? 'active' : ''}`}
               onClick={() => { setIntelView('golden'); setIsIntelCollapsed(false); }}
             >
@@ -1784,6 +1862,21 @@ function App() {
                   onOpenPaperTrading={(sym) => {
                     setPaperTradeSymbol(sym)
                     setIsPaperTradingOpen(true)
+                  }}
+                  lang={lang}
+                />
+              )}
+
+              {intelView === 'option_pick' && (
+                <DailyOptionPickGuide
+                  API_BASE_URL={API_BASE_URL}
+                  onOpenScalpDesk={(sym) => {
+                    setScalpSymbol(sym || 'QQQ')
+                    setIsScalpOpen(true)
+                  }}
+                  onOpenFullChart={(sym) => {
+                    const ast = signals.find(s => s.symbol === sym) || { symbol: sym, current_price: 704.75 }
+                    setFullChartAsset(ast)
                   }}
                   lang={lang}
                 />
@@ -2146,6 +2239,10 @@ function App() {
                               onOpenBrain={(sym) => {
                                 setBrainSymbol(sym || 'QQQ')
                                 setIsBrainOpen(true)
+                              }}
+                              onOpenScalp={(sym) => {
+                                setScalpSymbol(sym || 'QQQ')
+                                setIsScalpOpen(true)
                               }}
                             />
                           )

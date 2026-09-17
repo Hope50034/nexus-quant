@@ -75,12 +75,17 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 
 import os
-import pyodbc
+
+try:
+    import pyodbc
+    HAS_PYODBC = True
+except ImportError:
+    HAS_PYODBC = False
 
 # Database: Auto-detects local MSSQL SQLEXPRESS (office environment)
-# If not reachable (e.g. home PC without SQL Server), seamlessly falls back to sqlite3
+# If not reachable (e.g. home PC or Mac without SQL Server), seamlessly falls back to sqlite3
 def _detect_database():
-    if os.environ.get('USE_SQLITE', '0') == '1':
+    if not HAS_PYODBC or os.environ.get('USE_SQLITE', '0') == '1':
         return {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',

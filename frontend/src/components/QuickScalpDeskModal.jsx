@@ -35,7 +35,7 @@ import {
 } from '../utils/paperTradingStorage'
 
 const POPULAR_TICKERS = ['QQQ', 'SPY', 'SOFI', 'PLTR', 'AMD', 'NVDA', 'TSLA']
-const BUDGET_PRESETS = [10, 15, 20, 25, 30, 50, 75, 100]
+const BUDGET_PRESETS = [10, 15, 20, 25, 30, 31, 50, 75, 100]
 
 export default function QuickScalpDeskModal({
   isOpen = false,
@@ -367,6 +367,18 @@ export default function QuickScalpDeskModal({
       playSignalSound(diff >= 0 ? 'PROFIT' : 'STOP')
       setStatusMsg(`🎉 Paper scalp closed at $${currentP.toFixed(2)}! Net PnL: ${diff >= 0 ? '+' : ''}$${diff.toFixed(2)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)`)
     }
+  }
+
+  const handleLoadPosition = (contract) => {
+    if (!contract) return
+    const unitCost = parseFloat(contract.price_per_share || (parseFloat(contract.contract_cost) / 100))
+    setActiveTrade(contract)
+    setTradeEntryPrice(unitCost)
+    setTradeCurrentPrice(unitCost)
+    setIsTimerRunning(true)
+    setElapsedSeconds(0)
+    setCustomAlertFired(false)
+    setStatusMsg(`📡 Tracking ${contract.contract_symbol || contract.strike} live. Sell signal engine active!`)
   }
 
   // Calculate live active scalp metrics
@@ -723,7 +735,7 @@ export default function QuickScalpDeskModal({
                         BEST SCALP PICK RIGHT NOW FOR ${budget}
                       </span>
                       <span className="hero-spot-info">
-                        {symbol} Spot Price: <strong>${scalpData.current_underlying_price}</strong> ({scalpData.intraday_change_pct >= 0 ? '+' : ''}{scalpData.intraday_change_pct}% 15m Momentum)
+                        {symbol} {scalpData.pre_market?.is_active ? 'Pre-Market:' : 'Spot:'} <strong>${scalpData.pre_market?.is_active ? parseFloat(scalpData.pre_market.price).toFixed(2) : scalpData.current_underlying_price}</strong> ({scalpData.pre_market?.is_active ? `${scalpData.pre_market.change >= 0 ? '+' : ''}${parseFloat(scalpData.pre_market.change_pct).toFixed(2)}% ${scalpData.pre_market.gap_type.replace('_', ' ')}` : `${scalpData.intraday_change_pct >= 0 ? '+' : ''}${scalpData.intraday_change_pct}% 15m Momentum`})
                       </span>
                     </div>
 
