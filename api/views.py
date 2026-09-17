@@ -1991,11 +1991,12 @@ class AIBrainFusionView(APIView):
         return Response(payload, status=status.HTTP_200_OK)
 
 
-def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO'):
+def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO', expiration=None):
     """
     Rapid 0DTE/1DTE Scalper Engine:
-    Finds real option contracts matching an exact dollar budget (e.g. $30),
+    Finds real option contracts matching an exact dollar budget (e.g. $15 or $30),
     providing exact entry prices, Webull limit tickets, and automated sell signals:
+    - Default Expiration: expirations[0] (Today's 0DTE, e.g. 2026-09-17)
     - Target 1: Quick Scalp (+25% gain)
     - Target 2: Momentum Runner (+60% gain)
     - Stop-Loss: Capital Preservation Exit (-22% cut)
@@ -2029,8 +2030,15 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO'):
         intraday_change = 0.45
         ticker = None
 
-    expirations = ticker.options if (ticker and hasattr(ticker, 'options') and ticker.options) else []
-    target_exp = expirations[1] if len(expirations) > 1 else (expirations[0] if expirations else '1DTE')
+    expirations = list(ticker.options) if (ticker and hasattr(ticker, 'options') and ticker.options) else []
+    
+    # Priority: user specified expiration > expirations[0] (Today's 0DTE!) > fallback
+    if expiration and expiration in expirations:
+        target_exp = expiration
+    elif expirations:
+        target_exp = expirations[0]  # Today's active 0DTE!
+    else:
+        target_exp = '0DTE'
 
     contracts = []
 
@@ -2165,6 +2173,7 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO'):
         'intraday_change_pct': intraday_change,
         'user_budget': budget,
         'expiration': target_exp,
+        'available_expirations': expirations[:6],
         'contracts': contracts,
         'top_recommendation': top_pick,
         'scalper_playbook': {
@@ -2178,21 +2187,23 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO'):
 
 class BudgetScalpFinderView(APIView):
     """
-    GET /api/options/scalp-finder/?symbol=QQQ&budget=30
-    POST /api/options/scalp-finder/ {"symbol": "QQQ", "budget": 30, "direction": "AUTO"}
+    GET /api/options/scalp-finder/?symbol=QQQ&budget=30&expiration=2026-09-17
+    POST /api/options/scalp-finder/ {"symbol": "QQQ", "budget": 30, "direction": "AUTO", "expiration": "2026-09-17"}
     """
     def get(self, request):
         symbol = request.query_params.get('symbol', 'QQQ').strip().upper()
         budget = request.query_params.get('budget', 30.0)
         direction = request.query_params.get('direction', 'AUTO')
-        payload = find_budget_scalp_options(symbol, budget, direction)
+        expiration = request.query_params.get('expiration', None)
+        payload = find_budget_scalp_options(symbol, budget, direction, expiration)
         return Response(payload, status=status.HTTP_200_OK)
 
     def post(self, request):
         symbol = request.data.get('symbol', 'QQQ').strip().upper()
         budget = request.data.get('budget', 30.0)
         direction = request.data.get('direction', 'AUTO')
-        payload = find_budget_scalp_options(symbol, budget, direction)
+        expiration = request.data.get('expiration', None)
+        payload = find_budget_scalp_options(symbol, budget, direction, expiration)
         return Response(payload, status=status.HTTP_200_OK)
 
 

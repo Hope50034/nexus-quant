@@ -37,6 +37,7 @@ export default function QuickScalpDeskModal({
   const [budget, setBudget] = useState(30)
   const [budgetInput, setBudgetInput] = useState('30')
   const [direction, setDirection] = useState('AUTO') // 'AUTO' | 'BULLISH' | 'BEARISH'
+  const [selectedExpiration, setSelectedExpiration] = useState(null)
   const [loading, setLoading] = useState(false)
   const [scalpData, setScalpData] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
@@ -50,7 +51,10 @@ export default function QuickScalpDeskModal({
   const [statusMsg, setStatusMsg] = useState(null)
 
   useEffect(() => {
-    if (initialSymbol) setSymbol(initialSymbol)
+    if (initialSymbol) {
+      setSymbol(initialSymbol)
+      setSelectedExpiration(null)
+    }
   }, [initialSymbol])
 
   // Debounced sync from budgetInput to budget so user can freely type without jumping
@@ -66,9 +70,9 @@ export default function QuickScalpDeskModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchScalpContracts(symbol, budget)
+      fetchScalpContracts(symbol, budget, selectedExpiration)
     }
-  }, [isOpen, symbol, budget, direction])
+  }, [isOpen, symbol, budget, direction, selectedExpiration])
 
   // 15-Minute Scalp Timer
   useEffect(() => {
@@ -81,10 +85,13 @@ export default function QuickScalpDeskModal({
     return () => clearInterval(interval)
   }, [isTimerRunning])
 
-  const fetchScalpContracts = async (targetSym, targetBudget) => {
+  const fetchScalpContracts = async (targetSym, targetBudget, targetExp = selectedExpiration) => {
     setLoading(true)
     try {
-      const url = `${API_BASE_URL}/api/options/scalp-finder/?symbol=${encodeURIComponent(targetSym)}&budget=${targetBudget}&direction=${direction}`
+      let url = `${API_BASE_URL}/api/options/scalp-finder/?symbol=${encodeURIComponent(targetSym)}&budget=${targetBudget}&direction=${direction}`
+      if (targetExp) {
+        url += `&expiration=${encodeURIComponent(targetExp)}`
+      }
       const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
@@ -110,6 +117,7 @@ export default function QuickScalpDeskModal({
       setTimeout(() => setCopiedId(null), 2500)
     }
   }
+  const handleCopyWebull = handleCopyTicket
 
   const handleLoadPosition = (contract) => {
     setActiveTrade(contract)
@@ -297,6 +305,29 @@ export default function QuickScalpDeskModal({
                 </button>
               </div>
             </div>
+
+            {/* Expiration Selector */}
+            {scalpData?.available_expirations && scalpData.available_expirations.length > 0 && (
+              <div className="ctrl-group">
+                <span className="ctrl-label">EXPIRATION:</span>
+                <div className="ticker-pills">
+                  {scalpData.available_expirations.slice(0, 3).map((exp, idx) => {
+                    const isSelected = (selectedExpiration || scalpData.expiration) === exp
+                    const label = idx === 0 ? `⚡ Today (${exp.slice(5)})` : idx === 1 ? `📅 Tomorrow (${exp.slice(5)})` : `📅 ${exp.slice(5)}`
+                    return (
+                      <button
+                        key={exp}
+                        className={`t-pill ${isSelected ? 'active' : ''}`}
+                        onClick={() => setSelectedExpiration(exp)}
+                        title={`Filter contracts for expiration ${exp}`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Modal Main Content */}
