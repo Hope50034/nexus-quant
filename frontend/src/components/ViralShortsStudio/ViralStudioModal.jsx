@@ -22,6 +22,8 @@ import KineticCanvasPlayer from './KineticCanvasPlayer'
 export default function ViralStudioModal({
   isOpen = false,
   onClose,
+  isFullScreen = false,
+  onSwitchToQuant,
   API_BASE_URL = 'http://127.0.0.1:8000'
 }) {
   const [activeStep, setActiveStep] = useState(1) // 1: Niche, 2: Script, 3: Voice, 4: Video
@@ -43,7 +45,7 @@ export default function ViralStudioModal({
 
   // Fetch Niches and Voices on mount
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || isFullScreen) {
       fetch(`${API_BASE_URL}/api/viral/niches/`)
         .then(res => res.json())
         .then(data => {
@@ -59,7 +61,7 @@ export default function ViralStudioModal({
         .then(data => setVoices(data))
         .catch(err => console.error('Failed to fetch voices:', err))
     }
-  }, [isOpen, API_BASE_URL])
+  }, [isOpen, isFullScreen, API_BASE_URL])
 
   // Step 1 -> 2: Generate Script
   const handleGenerateScript = async () => {
@@ -112,102 +114,92 @@ export default function ViralStudioModal({
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !isFullScreen) return null
 
-  return (
-    <AnimatePresence>
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(3, 7, 18, 0.85)',
-          backdropFilter: 'blur(12px)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem'
-        }}
-        onClick={onClose}
-      >
-        <motion.div
-          style={{
-            position: 'relative',
-            width: '100%',
-            maxWidth: '1080px',
-            maxHeight: '92vh',
-            background: '#090d16',
-            borderRadius: '24px',
-            border: '1px solid #1e293b',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.12)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            fontFamily: 'monospace'
-          }}
-          onClick={(e) => e.stopPropagation()}
-          initial={{ opacity: 0, scale: 0.96, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 15 }}
-        >
-          {/* Studio Header */}
+  const studioInnerContent = (
+    <>
+      {/* Studio Header */}
+      <div style={{
+        padding: isFullScreen ? '1.25rem 2.5rem' : '1.25rem 1.75rem',
+        borderBottom: '1px solid #1e293b',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: '#0c1222'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
-            padding: '1.25rem 1.75rem',
-            borderBottom: '1px solid #1e293b',
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #0284c7, #6366f1)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            background: '#0c1222'
+            justifyContent: 'center',
+            color: '#fff',
+            boxShadow: '0 0 15px rgba(2, 132, 199, 0.5)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #0284c7, #6366f1)',
+            <Video size={20} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc', fontWeight: 800 }}>
+                VIRAL-AGENT
+              </h3>
+              <span style={{
+                fontSize: '0.65rem',
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#10b981',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: 700
+              }}>
+                CONTENT-TO-CASH ENGINE
+              </span>
+              <span style={{
+                fontSize: '0.65rem',
+                background: 'rgba(234, 179, 8, 0.15)',
+                color: '#eab308',
+                border: '1px solid rgba(234, 179, 8, 0.3)',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: 700
+              }}>
+                $0 API COST
+              </span>
+            </div>
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>
+              Autonomous 9:16 vertical video factory with animated kinetic subtitles & neural voiceover.
+            </p>
+          </div>
+        </div>
+
+        {/* Header Right Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {isFullScreen && onSwitchToQuant && (
+            <button
+              onClick={onSwitchToQuant}
+              style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                boxShadow: '0 0 15px rgba(2, 132, 199, 0.5)'
-              }}>
-                <Video size={20} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc', fontWeight: 800 }}>
-                    VIRAL-AGENT
-                  </h3>
-                  <span style={{
-                    fontSize: '0.65rem',
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    color: '#10b981',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    fontWeight: 700
-                  }}>
-                    CONTENT-TO-CASH ENGINE
-                  </span>
-                  <span style={{
-                    fontSize: '0.65rem',
-                    background: 'rgba(234, 179, 8, 0.15)',
-                    color: '#eab308',
-                    border: '1px solid rgba(234, 179, 8, 0.3)',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    fontWeight: 700
-                  }}>
-                    $0 API COST
-                  </span>
-                </div>
-                <p style={{ margin: '2px 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>
-                  Autonomous 9:16 vertical video factory with animated kinetic subtitles & neural voiceover.
-                </p>
-              </div>
-            </div>
+                gap: '6px',
+                background: '#1e293b',
+                border: '1px solid #334155',
+                color: '#38bdf8',
+                padding: '6px 14px',
+                borderRadius: '16px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+              title="Switch back to Quant Terminal"
+            >
+              <span>📊 Quant Terminal</span>
+            </button>
+          )}
 
-            {/* Close Button */}
+          {onClose && (
             <button
               onClick={onClose}
               style={{
@@ -224,7 +216,9 @@ export default function ViralStudioModal({
             >
               <X size={18} />
             </button>
-          </div>
+          )}
+        </div>
+      </div>
 
           {/* 4-Step Pipeline Breadcrumb Bar */}
           <div style={{
@@ -585,6 +579,63 @@ export default function ViralStudioModal({
               />
             )}
           </div>
+    </>
+  )
+
+  if (isFullScreen) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          minHeight: '100vh',
+          background: '#070b14',
+          display: 'flex',
+          flexDirection: 'column',
+          fontFamily: 'monospace'
+        }}
+      >
+        {studioInnerContent}
+      </div>
+    )
+  }
+
+  return (
+    <AnimatePresence>
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(3, 7, 18, 0.85)',
+          backdropFilter: 'blur(12px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}
+        onClick={onClose}
+      >
+        <motion.div
+          style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '1080px',
+            maxHeight: '92vh',
+            background: '#090d16',
+            borderRadius: '24px',
+            border: '1px solid #1e293b',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.12)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            fontFamily: 'monospace'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, scale: 0.96, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 15 }}
+        >
+          {studioInnerContent}
         </motion.div>
       </div>
     </AnimatePresence>

@@ -234,6 +234,7 @@ function App() {
 
   // VIRAL-AGENT Content-to-Cash Short-Form Video Factory State
   const [isViralStudioOpen, setIsViralStudioOpen] = useState(false)
+  const [appView, setAppView] = useState('quant') // 'quant' | 'viral_studio'
 
   // Bilingual English/Thai (EN/TH) i18n State
   const [lang, setLang] = useState(() => localStorage.getItem('kappa_lang') || 'en')
@@ -1056,6 +1057,17 @@ function App() {
 
   const navTabs = ['Dashboard', 'Signals', 'Volatility']
 
+  // Full-Screen Dedicated VIRAL-AGENT Content-to-Cash Video Factory Mode
+  if (appView === 'viral_studio') {
+    return (
+      <ViralStudioModal
+        isFullScreen={true}
+        API_BASE_URL={API_BASE_URL}
+        onSwitchToQuant={() => setAppView('quant')}
+      />
+    )
+  }
+
   return (
     <motion.div
       className="minimal-app-root"
@@ -1445,16 +1457,16 @@ function App() {
             <span className="scalp-pulse-chip">SELL SIGNALS</span>
           </button>
 
-          {/* VIRAL-AGENT Video Factory Launcher Button */}
+          {/* VIRAL-AGENT Video Factory Launcher Button (Full-Screen Studio) */}
           <button
             className="quick-scalp-trigger-btn font-mono"
-            onClick={() => setIsViralStudioOpen(true)}
+            onClick={() => setAppView('viral_studio')}
             style={{
               background: 'linear-gradient(135deg, #0284c7, #6366f1)',
               borderColor: '#818cf8',
               color: '#ffffff'
             }}
-            title="Open VIRAL-AGENT Faceless Short-Form Video & Content-to-Cash Factory"
+            title="Switch to VIRAL-AGENT Full-Screen Faceless Short-Form Video & Content-to-Cash Factory"
           >
             <Video size={13} style={{ color: '#ffffff' }} />
             <span style={{ color: '#ffffff', fontWeight: 800 }}>Viral Video Factory</span>
