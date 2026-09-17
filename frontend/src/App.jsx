@@ -51,7 +51,8 @@ import {
   GraduationCap,
   Globe,
   Award,
-  Briefcase
+  Briefcase,
+  Video
 } from 'lucide-react'
 
 
@@ -86,6 +87,7 @@ import AIMentorModal from './components/AIMentorModal'
 import PaperTradingModal from './components/PaperTradingModal'
 import AIBrainFusionModal from './components/AIBrainFusionModal'
 import QuickScalpDeskModal from './components/QuickScalpDeskModal'
+import ViralStudioModal from './components/ViralShortsStudio/ViralStudioModal'
 import { getPortfolio, calculatePortfolioStats } from './utils/paperTradingStorage'
 import BreakoutAlertsBar from './components/BreakoutAlertsBar'
 
@@ -230,6 +232,10 @@ function App() {
   // 0DTE $30 Quick Scalper Desk & Automated Exit Signals State
   const [isScalpOpen, setIsScalpOpen] = useState(false)
   const [scalpSymbol, setScalpSymbol] = useState('QQQ')
+
+  // VIRAL-AGENT Content-to-Cash Short-Form Video Factory State
+  const [isViralStudioOpen, setIsViralStudioOpen] = useState(false)
+  const [appView, setAppView] = useState('quant') // 'quant' | 'viral_studio'
 
   // Bilingual English/Thai (EN/TH) i18n State
   const [lang, setLang] = useState(() => localStorage.getItem('kappa_lang') || 'en')
@@ -1100,6 +1106,17 @@ function App() {
 
   const navTabs = ['Dashboard', 'Signals', 'Volatility']
 
+  // Full-Screen Dedicated VIRAL-AGENT Content-to-Cash Video Factory Mode
+  if (appView === 'viral_studio') {
+    return (
+      <ViralStudioModal
+        isFullScreen={true}
+        API_BASE_URL={API_BASE_URL}
+        onSwitchToQuant={() => setAppView('quant')}
+      />
+    )
+  }
+
   return (
     <motion.div
       className="minimal-app-root"
@@ -1269,6 +1286,13 @@ function App() {
           setIsScalpOpen(false)
           setIsBacktestOpen(true)
         }}
+      />
+
+      {/* VIRAL-AGENT Content-to-Cash Video Factory Studio Modal */}
+      <ViralStudioModal
+        isOpen={isViralStudioOpen}
+        onClose={() => setIsViralStudioOpen(false)}
+        API_BASE_URL={API_BASE_URL}
       />
 
 
@@ -1496,6 +1520,22 @@ function App() {
             <Zap size={13} style={{ color: '#000000' }} />
             <span>0DTE Scalp Desk ($31)</span>
             <span className="scalp-pulse-chip">SELL SIGNALS</span>
+          </button>
+
+          {/* VIRAL-AGENT Video Factory Launcher Button (Full-Screen Studio) */}
+          <button
+            className="quick-scalp-trigger-btn font-mono"
+            onClick={() => setAppView('viral_studio')}
+            style={{
+              background: 'linear-gradient(135deg, #0284c7, #6366f1)',
+              borderColor: '#818cf8',
+              color: '#ffffff'
+            }}
+            title="Switch to VIRAL-AGENT Full-Screen Faceless Short-Form Video & Content-to-Cash Factory"
+          >
+            <Video size={13} style={{ color: '#ffffff' }} />
+            <span style={{ color: '#ffffff', fontWeight: 800 }}>Viral Video Factory</span>
+            <span className="scalp-pulse-chip" style={{ background: '#eab308', color: '#000' }}>$$$ CASH ENGINE</span>
           </button>
 
           {/* Institutional Quant Tools Dropdown Popover */}
