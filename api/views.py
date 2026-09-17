@@ -2054,11 +2054,18 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO', expir
                 if valid_calls.empty:
                     valid_calls = calls[(calls['ask'] >= min_price * 0.8) & (calls['ask'] <= max_price * 1.25)]
                 
-                sorted_calls = valid_calls.sort_values(by='volume', ascending=False).head(3)
-                for _, row in sorted_calls.iterrows():
+                max_call_vol = valid_calls['volume'].fillna(0).max() or 1
+                for _, row in valid_calls.iterrows():
                     strike = float(row['strike'])
                     last_p = float(row['lastPrice']) if row['lastPrice'] > 0 else float(row.get('ask', target_per_share))
                     cost = round(last_p * 100, 2)
+                    vol = int(row.get('volume', 0)) if pd.notnull(row.get('volume')) else 0
+                    oi = int(row.get('openInterest', 0)) if pd.notnull(row.get('openInterest')) else 0
+                    ratio = round(vol / (oi + 1), 2)
+                    # Volume & Liquidity Confluence Score (0 to 100)
+                    vol_score = round(((vol / max_call_vol) * 60) + (min(ratio, 15) / 15 * 40), 1)
+                    liquidity_tag = 'HIGH LIQUIDITY (EASY EXIT)' if vol >= 5000 else ('MODERATE' if vol >= 1000 else 'LOW VOLUME')
+
                     contracts.append({
                         'type': 'CALL',
                         'strike': strike,
@@ -2067,8 +2074,12 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO', expir
                         'contract_cost': cost,
                         'bid': round(float(row.get('bid', last_p)), 2),
                         'ask': round(float(row.get('ask', last_p)), 2),
-                        'volume': int(row.get('volume', 0)) if pd.notnull(row.get('volume')) else 0,
-                        'open_interest': int(row.get('openInterest', 0)) if pd.notnull(row.get('openInterest')) else 0,
+                        'volume': vol,
+                        'open_interest': oi,
+                        'vol_oi_ratio': ratio,
+                        'volume_score': vol_score,
+                        'liquidity_tag': liquidity_tag,
+                        'probability_60pct': 'HIGH' if vol >= 15000 and ratio >= 3.0 else ('MODERATE' if vol >= 3000 else 'SPECULATIVE'),
                         'sell_target_1': round(last_p * 1.25, 2),
                         'sell_target_1_pnl': round(cost * 0.25, 2),
                         'sell_target_2': round(last_p * 1.60, 2),
@@ -2087,11 +2098,17 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO', expir
                 if valid_puts.empty:
                     valid_puts = puts[(puts['ask'] >= min_price * 0.8) & (puts['ask'] <= max_price * 1.25)]
 
-                sorted_puts = valid_puts.sort_values(by='volume', ascending=False).head(3)
-                for _, row in sorted_puts.iterrows():
+                max_put_vol = valid_puts['volume'].fillna(0).max() or 1
+                for _, row in valid_puts.iterrows():
                     strike = float(row['strike'])
                     last_p = float(row['lastPrice']) if row['lastPrice'] > 0 else float(row.get('ask', target_per_share))
                     cost = round(last_p * 100, 2)
+                    vol = int(row.get('volume', 0)) if pd.notnull(row.get('volume')) else 0
+                    oi = int(row.get('openInterest', 0)) if pd.notnull(row.get('openInterest')) else 0
+                    ratio = round(vol / (oi + 1), 2)
+                    vol_score = round(((vol / max_put_vol) * 60) + (min(ratio, 15) / 15 * 40), 1)
+                    liquidity_tag = 'HIGH LIQUIDITY (EASY EXIT)' if vol >= 5000 else ('MODERATE' if vol >= 1000 else 'LOW VOLUME')
+
                     contracts.append({
                         'type': 'PUT',
                         'strike': strike,
@@ -2100,8 +2117,12 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO', expir
                         'contract_cost': cost,
                         'bid': round(float(row.get('bid', last_p)), 2),
                         'ask': round(float(row.get('ask', last_p)), 2),
-                        'volume': int(row.get('volume', 0)) if pd.notnull(row.get('volume')) else 0,
-                        'open_interest': int(row.get('openInterest', 0)) if pd.notnull(row.get('openInterest')) else 0,
+                        'volume': vol,
+                        'open_interest': oi,
+                        'vol_oi_ratio': ratio,
+                        'volume_score': vol_score,
+                        'liquidity_tag': liquidity_tag,
+                        'probability_60pct': 'HIGH' if vol >= 15000 and ratio >= 3.0 else ('MODERATE' if vol >= 3000 else 'SPECULATIVE'),
                         'sell_target_1': round(last_p * 1.25, 2),
                         'sell_target_1_pnl': round(cost * 0.25, 2),
                         'sell_target_2': round(last_p * 1.60, 2),
@@ -2114,6 +2135,10 @@ def find_budget_scalp_options(symbol='QQQ', budget=30.0, direction='AUTO', expir
                     })
         except Exception as e:
             print(f"Error querying live option chain: {e}")
+
+    # Sort contracts by volume score so the highest volume contracts are always at the top!
+    if contracts:
+        contracts.sort(key=lambda x: x.get('volume_score', 0), reverse=True)
 
     # Fallback if market closed or chain unavailable
     if not contracts:

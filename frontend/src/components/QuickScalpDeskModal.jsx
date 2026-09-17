@@ -396,6 +396,23 @@ export default function QuickScalpDeskModal({
                           <span className="cost-unit">per contract (${parseFloat(scalpData.top_recommendation.price_per_share || (scalpData.top_recommendation.contract_cost / 100)).toFixed(2)} limit on Webull)</span>
                         </div>
 
+                        {/* Volume-Weighted Confluence Bar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', margin: '0.4rem 0 0.5rem 0' }}>
+                          <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.35)', color: '#10b981', fontWeight: 700 }}>
+                            🔥 Vol: {scalpData.top_recommendation.volume ? scalpData.top_recommendation.volume.toLocaleString() : '0'} contracts
+                          </span>
+                          {scalpData.top_recommendation.vol_oi_ratio && (
+                            <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '4px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.35)', color: '#06b6d4', fontWeight: 600 }}>
+                              ⚡ Volume/OI Spike: {scalpData.top_recommendation.vol_oi_ratio}x
+                            </span>
+                          )}
+                          {scalpData.top_recommendation.probability_60pct && (
+                            <span style={{ fontSize: '0.72rem', padding: '2px 7px', borderRadius: '4px', background: scalpData.top_recommendation.probability_60pct === 'HIGH' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', border: `1px solid ${scalpData.top_recommendation.probability_60pct === 'HIGH' ? '#10b981' : '#f59e0b'}`, color: scalpData.top_recommendation.probability_60pct === 'HIGH' ? '#10b981' : '#f59e0b', fontWeight: 700 }}>
+                              🎯 +60% Surge Odds: {scalpData.top_recommendation.probability_60pct}
+                            </span>
+                          )}
+                        </div>
+
                         <p className="hero-explanation">
                           {scalpData.top_recommendation.type === 'CALL'
                             ? `Bullish Momentum: ${symbol} is pushing upwards. If it moves +$1 to +$2 in the next 15 minutes, this cheap call can surge +25% to +60%.`
@@ -648,12 +665,20 @@ export default function QuickScalpDeskModal({
                           <div className="col-pricing">
                             <span className="cost-val">${parseFloat(c.contract_cost).toFixed(2)}</span>
                             <span className="share-val">(${parseFloat(c.price_per_share).toFixed(2)}/sh)</span>
-                            <span className="vol-val">Vol: {c.volume.toLocaleString()}</span>
+                            <span className="vol-val">Vol: {c.volume ? c.volume.toLocaleString() : '0'}</span>
+                            {c.vol_oi_ratio && (
+                              <span style={{ fontSize: '0.68rem', color: '#06b6d4', fontWeight: 600 }}>({c.vol_oi_ratio}x OI)</span>
+                            )}
                           </div>
 
                           <div className="col-targets">
                             <span className="t1-badge">Target 1: ${parseFloat(c.sell_target_1).toFixed(2)} (+${parseFloat(c.sell_target_1_pnl).toFixed(2)})</span>
                             <span className="sl-badge">Stop: ${parseFloat(c.stop_loss_exit).toFixed(2)} (-${parseFloat(c.stop_loss_loss).toFixed(2)})</span>
+                            {c.probability_60pct && (
+                              <span style={{ fontSize: '0.68rem', color: c.probability_60pct === 'HIGH' ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                                60% Surge: {c.probability_60pct}
+                              </span>
+                            )}
                           </div>
 
                           <div className="col-actions">
