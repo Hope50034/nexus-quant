@@ -75,22 +75,39 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 
 import os
+import pyodbc
 
-# Database
-# Uses MSSQL if available (e.g. office), otherwise falls back to local sqlite3 seamlessly for home PC
+# Database: Auto-detects local MSSQL SQLEXPRESS (office environment)
+# If not reachable (e.g. home PC without SQL Server), seamlessly falls back to sqlite3
+def _detect_database():
+    if os.environ.get('USE_SQLITE', '0') == '1':
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    try:
+        conn = pyodbc.connect(
+            r'Driver={ODBC Driver 17 for SQL Server};Server=.\SQLEXPRESS;Database=InventoryDB;Trusted_Connection=yes;TrustServerCertificate=yes;',
+            timeout=2
+        )
+        conn.close()
+        return {
+            'ENGINE': 'mssql',
+            'NAME': 'InventoryDB',
+            'HOST': r'.\SQLEXPRESS',
+            'OPTIONS': {
+                'driver': 'ODBC Driver 17 for SQL Server',
+                'extra_params': 'Trusted_Connection=yes;TrustServerCertificate=yes;'
+            },
+        }
+    except Exception:
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'mssql',
-        'NAME': 'InventoryDB',
-        'HOST': r'.\SQLEXPRESS',
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-            'extra_params': 'Trusted_Connection=yes;TrustServerCertificate=yes;'
-        },
-    } if os.environ.get('USE_MSSQL', '0') == '1' else {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': _detect_database()
 }
 
 

@@ -39,4 +39,5 @@ urlpatterns = [
     path('brain/fusion/', AIBrainFusionView.as_view(), name='ai-brain-fusion'),
     path('options/scalp-finder/', BudgetScalpFinderView.as_view(), name='budget-scalp-finder'),
     path('options/backtest-6mo/', Options6MoBacktestView.as_view(), name='options-backtest-6mo'),
+    path('options/backtest/', Options6MoBacktestView.as_view(), name='options-backtest'),
 ]
