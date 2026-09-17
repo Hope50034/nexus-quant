@@ -1,27 +1,23 @@
-# ⚡ AURA QUANT // Terminal
+# 🔥 WEHAWT // Quantitative Options & Intelligence Terminal
 
-> Next-Generation Quantitative Options & Momentum Intelligence Terminal with Live AI Brain, 0DTE Fast Scalp Desk, and Multi-Asset Confluence Engine.
+> High-velocity 0DTE options day-trading terminal, live quantitative AI Brain, and automated sell signal execution engine.
 
 ---
 
-## 🚀 Key Features
+## ⚡ Core Engines
 
-- **⚡ 0DTE & 1DTE Quick Scalp Desk**: Real-time contract scanner filtered by strict budgets ($10, $15, $25, $30) with automated +25% profit targets, +60% runners, and -22% capital preservation stop-losses.
+- **🔥 0DTE & 1DTE Quick Scalp Desk**: Real-time contract scanner filtered by strict budgets ($10, $15, $25, $30) with automated +25% profit targets, +60% runners, and -22% capital preservation stop-losses.
 - **🧠 AI Confluence Brain**: Dual-engine quantitative fusion calculating real-time Volume-Weighted Average Price (VWAP), 9/21 Fast EMA crossover, 14-period RSI, and breaking news catalysts.
-- **🔥 Institutional Volume & Vol/OI Spikes**: Identifies unusual order flow surges (3x to 16x Open Interest) to calculate high-probability +60% momentum odds.
+- **⚡ Volume & Vol/OI Spikes**: Identifies unusual order flow surges (3x to 16x Open Interest) to calculate high-probability +60% momentum odds.
 - **📊 6-Month Options Backtest Engine**: Day-by-day simulated audit on QQQ day trades proving compound returns and win-rates over historical regimes.
 - **🛡️ Risk & Portfolio Management**: Monte Carlo simulation, Markowitz Efficient Frontier, and Paper Trading simulator stored in browser `localStorage`.
-- **🏠 Zero-Config Home PC & Cloud Support**: Seamless automatic SQLite fallback out of the box—no SQL Server setup required.
+- **🏠 Out-of-the-Box Home PC & Cloud Support**: Seamless automatic SQLite fallback out of the box—no SQL Server setup required.
 
 ---
 
 ## 🛠️ Quickstart (Home PC or Dev Machine)
 
-### 1. Prerequisites
-- Python 3.10+
-- Node.js 18+
-
-### 2. Backend Setup
+### 1. Backend Setup
 ```bash
 # Install Python dependencies
 pip install -r requirements.txt
@@ -30,7 +26,7 @@ pip install -r requirements.txt
 python manage.py runserver 127.0.0.1:8000
 ```
 
-### 3. Frontend Setup
+### 2. Frontend Setup
 ```bash
 # Navigate to frontend folder and install dependencies
 cd frontend

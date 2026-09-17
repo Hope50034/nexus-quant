@@ -1279,9 +1279,9 @@ function App() {
             <Activity size={18} />
           </div>
           <div className="minimal-brand-text">
-            <span className="brand-title">KAPPA</span>
+            <span className="brand-title">WEHAWT</span>
             <span className="brand-divider">/</span>
-            <span className="brand-sub">ANALYTICS</span>
+            <span className="brand-sub">QUANT</span>
           </div>
           <span className="live-pulse-badge">
             <motion.span
