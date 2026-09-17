@@ -367,6 +367,36 @@ export default function QuickScalpDeskModal({
                 {/* 1. Top Recommendation Hero Banner */}
                 {scalpData.top_recommendation && (
                   <div className="top-scalp-hero">
+                    {/* AI Brain Live Confluence Banner */}
+                    {scalpData.ai_brain && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '6px 12px',
+                        marginBottom: '10px',
+                        borderRadius: '6px',
+                        background: scalpData.ai_brain.bias === 'BULLISH' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                        border: `1px solid ${scalpData.ai_brain.bias === 'BULLISH' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+                        fontSize: '0.78rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{
+                            fontWeight: 800,
+                            color: scalpData.ai_brain.bias === 'BULLISH' ? '#10b981' : '#ef4444'
+                          }}>
+                            🧠 AI BRAIN ({scalpData.ai_brain.confidence}% CONFIDENCE):
+                          </span>
+                          <span style={{ color: '#e2e8f0' }}>{scalpData.ai_brain.verdict}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '0.72rem' }}>
+                          <span>VWAP: <strong style={{ color: '#38bdf8' }}>${scalpData.ai_brain.vwap}</strong></span>
+                          <span>EMA 9/21: <strong style={{ color: scalpData.ai_brain.ema_9 >= scalpData.ai_brain.ema_21 ? '#10b981' : '#ef4444' }}>${scalpData.ai_brain.ema_9}/${scalpData.ai_brain.ema_21}</strong></span>
+                          <span>RSI: <strong style={{ color: '#f59e0b' }}>{scalpData.ai_brain.rsi_14}</strong></span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="hero-badge-row">
                       <span className="hero-status-tag">
                         <Sparkles size={13} />
