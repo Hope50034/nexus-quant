@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { openPosition } from '../utils/paperTradingStorage'
 
-const POPULAR_TICKERS = ['QQQ', 'SPY', 'NVDA', 'TSLA', 'AMD']
+const POPULAR_TICKERS = ['QQQ', 'SPY', 'SOFI', 'PLTR', 'AMD', 'NVDA', 'TSLA']
 const BUDGET_PRESETS = [10, 15, 20, 25, 30, 50, 75, 100]
 
 export default function QuickScalpDeskModal({
