@@ -192,6 +192,48 @@ export function calculatePortfolioStats(portfolio, livePricesMap = {}) {
   const grossLosses = Math.abs(history.filter(h => h.pnlDollar < 0).reduce((sum, h) => sum + h.pnlDollar, 0));
   const profitFactor = grossLosses > 0 ? grossWins / grossLosses : grossWins > 0 ? 99.9 : 0.0;
 
+  // Streak Tracking (Current consecutive wins/losses and all-time best)
+  let currentStreak = 0;
+  let streakType = 'NONE'; // 'WIN' | 'LOSS' | 'NONE'
+  let bestWinStreak = 0;
+  let runningWinStreak = 0;
+
+  // Chronological order (oldest to newest) to calculate best all-time streak
+  const chronological = [...history].sort((a, b) => new Date(a.exitDate || 0) - new Date(b.exitDate || 0));
+  chronological.forEach(h => {
+    const isWin = (h.pnlDollar || 0) >= 0;
+    if (isWin) {
+      runningWinStreak += 1;
+      if (runningWinStreak > bestWinStreak) {
+        bestWinStreak = runningWinStreak;
+      }
+    } else {
+      runningWinStreak = 0;
+    }
+  });
+
+  // Current streak from newest trade backwards (history[0] is latest)
+  if (history.length > 0) {
+    const firstOutcome = (history[0].pnlDollar || 0) >= 0 ? 'WIN' : 'LOSS';
+    streakType = firstOutcome;
+    for (let i = 0; i < history.length; i++) {
+      const outcome = (history[i].pnlDollar || 0) >= 0 ? 'WIN' : 'LOSS';
+      if (outcome === firstOutcome) {
+        currentStreak += 1;
+      } else {
+        break;
+      }
+    }
+  }
+
+  const currentStreakBadge = streakType === 'WIN'
+    ? `🔥 ${currentStreak} Win Streak`
+    : streakType === 'LOSS'
+    ? `🛑 ${currentStreak} Loss Streak`
+    : '⚡ No Closed Trades';
+
+  const avgTradePnl = totalClosed > 0 ? Number((totalRealizedPnl / totalClosed).toFixed(2)) : 0.0;
+
   return {
     balance: Number(balance.toFixed(2)),
     initialBalance,
@@ -208,6 +250,69 @@ export function calculatePortfolioStats(portfolio, livePricesMap = {}) {
     wins,
     losses,
     winRate: Number(winRate.toFixed(1)),
-    profitFactor: Number(profitFactor.toFixed(2))
+    profitFactor: Number(profitFactor.toFixed(2)),
+    currentStreak,
+    streakType,
+    currentStreakBadge,
+    bestWinStreak,
+    avgTradePnl
   };
+}
+
+/**
+ * Exports closed trade history to a downloadable CSV file.
+ */
+export function exportPortfolioHistoryToCSV(portfolio) {
+  const history = portfolio?.history || [];
+  if (history.length === 0) {
+    alert('No closed trades in history to export yet.');
+    return false;
+  }
+
+  const headers = [
+    'Trade ID',
+    'Symbol',
+    'Asset Type',
+    'Entry Date',
+    'Exit Date',
+    'Entry Price ($)',
+    'Exit Price ($)',
+    'Quantity',
+    'Total Cost ($)',
+    'Exit Value ($)',
+    'Net PnL ($)',
+    'Return (%)',
+    'Outcome',
+    'Strategy / Notes'
+  ];
+
+  const rows = history.map(t => [
+    `"${t.id}"`,
+    `"${t.symbol}"`,
+    `"${t.assetType || 'Stock'}"`,
+    `"${t.entryDate || ''}"`,
+    `"${t.exitDate || ''}"`,
+    t.entryPrice !== undefined ? Number(t.entryPrice).toFixed(2) : '0.00',
+    t.exitPrice !== undefined ? Number(t.exitPrice).toFixed(2) : '0.00',
+    t.quantity !== undefined ? t.quantity : 0,
+    t.totalCost !== undefined ? Number(t.totalCost).toFixed(2) : '0.00',
+    t.exitValue !== undefined ? Number(t.exitValue).toFixed(2) : '0.00',
+    t.pnlDollar !== undefined ? Number(t.pnlDollar).toFixed(2) : '0.00',
+    t.pnlPercent !== undefined ? Number(t.pnlPercent).toFixed(2) : '0.00',
+    `"${t.outcome || (t.pnlDollar >= 0 ? 'WIN' : 'LOSS')}"`,
+    `"${(t.reason || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `wehawt_trade_ledger_${todayStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  return true;
 }

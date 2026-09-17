@@ -20,14 +20,17 @@ import {
   Zap,
   Info,
   Sliders,
-  Scale
+  Scale,
+  Flame,
+  Download
 } from 'lucide-react'
 import {
   getPortfolio,
   openPosition,
   closePosition,
   resetPortfolio,
-  calculatePortfolioStats
+  calculatePortfolioStats,
+  exportPortfolioHistoryToCSV
 } from '../utils/paperTradingStorage'
 
 export default function PaperTradingModal({
@@ -305,12 +308,13 @@ export default function PaperTradingModal({
               </div>
 
               <div className="pt-metric-card">
-                <span className="pt-metric-label">Realized P&L</span>
-                <span className="pt-metric-val" style={{ color: stats.totalRealizedPnl >= 0 ? '#16a34a' : '#dc2626' }}>
-                  {stats.totalRealizedPnl >= 0 ? '+' : ''}${stats.totalRealizedPnl.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                <span className="pt-metric-label">Trade Streak</span>
+                <span className="pt-metric-val" style={{ color: stats.streakType === 'WIN' ? '#10b981' : stats.streakType === 'LOSS' ? '#ef4444' : '#94a3b8', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Flame size={15} />
+                  <span>{stats.currentStreakBadge}</span>
                 </span>
                 <span className="pt-metric-sub">
-                  {stats.profitFactor}x profit factor
+                  Best: {stats.bestWinStreak} in a row • Avg: {stats.avgTradePnl >= 0 ? '+' : ''}${stats.avgTradePnl}
                 </span>
               </div>
             </div>
@@ -464,7 +468,70 @@ export default function PaperTradingModal({
                       </p>
                     </div>
                   ) : (
-                    <div className="pt-table-wrap">
+                    <>
+                      {/* Streak & Export Action Bar */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '10px',
+                        padding: '10px 14px',
+                        marginBottom: '12px',
+                        background: 'rgba(15, 23, 42, 0.6)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: '8px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '3px 10px',
+                            borderRadius: '4px',
+                            background: stats.streakType === 'WIN' ? 'rgba(16, 185, 129, 0.18)' : stats.streakType === 'LOSS' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(255,255,255,0.06)',
+                            border: `1px solid ${stats.streakType === 'WIN' ? '#10b981' : stats.streakType === 'LOSS' ? '#ef4444' : 'rgba(255,255,255,0.15)'}`,
+                            color: stats.streakType === 'WIN' ? '#10b981' : stats.streakType === 'LOSS' ? '#ef4444' : '#94a3b8',
+                            fontWeight: 800,
+                            fontSize: '0.80rem'
+                          }}>
+                            <Flame size={14} />
+                            <span>{stats.currentStreakBadge}</span>
+                          </div>
+
+                          <div style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>🏆 Best Streak: <strong style={{ color: '#10b981' }}>{stats.bestWinStreak} in a row</strong></span>
+                            <span>•</span>
+                            <span>Win Rate: <strong style={{ color: '#f8fafc' }}>{stats.winRate}%</strong></span>
+                            <span>•</span>
+                            <span>Avg Trade: <strong style={{ color: stats.avgTradePnl >= 0 ? '#10b981' : '#ef4444' }}>{stats.avgTradePnl >= 0 ? '+' : ''}${stats.avgTradePnl}</strong></span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => exportPortfolioHistoryToCSV(portfolio)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 14px',
+                            borderRadius: '5px',
+                            background: 'rgba(2, 132, 199, 0.18)',
+                            border: '1px solid rgba(2, 132, 199, 0.4)',
+                            color: '#38bdf8',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          title="Export complete closed trade ledger to CSV spreadsheet"
+                        >
+                          <Download size={13} />
+                          <span>Export CSV Ledger ({portfolio.history.length} Trades)</span>
+                        </button>
+                      </div>
+
+                      <div className="pt-table-wrap">
                       <table className="pt-table">
                         <thead>
                           <tr>
@@ -516,6 +583,7 @@ export default function PaperTradingModal({
                         </tbody>
                       </table>
                     </div>
+                    </>
                   )}
                 </div>
               )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap,
@@ -19,9 +19,20 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  Volume2,
+  VolumeX,
+  Flame,
+  Download
 } from 'lucide-react'
-import { openPosition } from '../utils/paperTradingStorage'
+import {
+  openPosition,
+  closePosition,
+  getPortfolio,
+  calculatePortfolioStats,
+  exportPortfolioHistoryToCSV
+} from '../utils/paperTradingStorage'
 
 const POPULAR_TICKERS = ['QQQ', 'SPY', 'SOFI', 'PLTR', 'AMD', 'NVDA', 'TSLA']
 const BUDGET_PRESETS = [10, 15, 20, 25, 30, 50, 75, 100]
@@ -53,33 +64,114 @@ export default function QuickScalpDeskModal({
 
   const [contractQty, setContractQty] = useState(1)
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [soundMode, setSoundMode] = useState('GAMER') // 'GAMER' | 'CHIME'
+  const [soundVolume, setSoundVolume] = useState(0.30) // 0.30 loud, 0.15 med, 0 muted
+  const [notifPermission, setNotifPermission] = useState(
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default'
+  )
+  const [customAlertPrice, setCustomAlertPrice] = useState('')
+  const [customAlertActive, setCustomAlertActive] = useState(false)
+  const [customAlertFired, setCustomAlertFired] = useState(false)
+  const [activePositionId, setActivePositionId] = useState(null)
+  const [positionClosedNotice, setPositionClosedNotice] = useState(null)
 
-  const playSignalSound = (type) => {
-    if (!soundEnabled) return
+  const playSignalSound = (type, customMode = soundMode) => {
+    if (!soundEnabled || soundVolume <= 0) return
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext
       if (!AudioCtx) return
       const ctx = new AudioCtx()
+      if (ctx.state === 'suspended') {
+        ctx.resume()
+      }
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.connect(gain)
       gain.connect(ctx.destination)
+
+      const vol = soundVolume
+      const now = ctx.currentTime
+
       if (type === 'PROFIT') {
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime)
-        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1)
-        gain.gain.setValueAtTime(0.15, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35)
-        osc.start()
-        osc.stop(ctx.currentTime + 0.35)
+        if (customMode === 'GAMER') {
+          // High-pitch 4-note victory arpeggio (C6 -> E6 -> G6 -> C7) designed to pierce gaming headsets
+          osc.type = 'triangle'
+          osc.frequency.setValueAtTime(1046.50, now)
+          osc.frequency.setValueAtTime(1318.51, now + 0.09)
+          osc.frequency.setValueAtTime(1567.98, now + 0.18)
+          osc.frequency.setValueAtTime(2093.00, now + 0.27)
+          gain.gain.setValueAtTime(vol * 1.5, now)
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65)
+          osc.start(now)
+          osc.stop(now + 0.65)
+        } else {
+          // Melodic 2-tone chime
+          osc.frequency.setValueAtTime(587.33, now)
+          osc.frequency.setValueAtTime(880, now + 0.1)
+          gain.gain.setValueAtTime(vol, now)
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35)
+          osc.start(now)
+          osc.stop(now + 0.35)
+        }
       } else if (type === 'STOP') {
-        osc.frequency.setValueAtTime(329.63, ctx.currentTime)
-        osc.frequency.setValueAtTime(220, ctx.currentTime + 0.1)
-        gain.gain.setValueAtTime(0.2, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
-        osc.start()
-        osc.stop(ctx.currentTime + 0.4)
+        // Urgent descending siren buzzer for stop loss
+        osc.type = 'sawtooth'
+        osc.frequency.setValueAtTime(440, now)
+        osc.frequency.setValueAtTime(330, now + 0.12)
+        osc.frequency.setValueAtTime(220, now + 0.24)
+        gain.gain.setValueAtTime(vol * 1.3, now)
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55)
+        osc.start(now)
+        osc.stop(now + 0.55)
+      } else if (type === 'CUSTOM') {
+        // High-pitch alert ping
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(880, now)
+        osc.frequency.setValueAtTime(1318.5, now + 0.12)
+        gain.gain.setValueAtTime(vol * 1.2, now)
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45)
+        osc.start(now)
+        osc.stop(now + 0.45)
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Audio alert error:', e)
+    }
+  }
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('Desktop push notifications are not supported in this browser.')
+      return
+    }
+    const perm = await Notification.requestPermission()
+    setNotifPermission(perm)
+    if (perm === 'granted') {
+      sendDesktopNotification(
+        '🎮 Desktop Game Alerts Enabled!',
+        'You will receive Windows notification toasts when options hit +25%, +60% profit, or stop loss while you game.',
+        'test-notif'
+      )
+    }
+  }
+
+  const sendDesktopNotification = (title, body, tag = 'scalp-alert') => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notif = new Notification(title, {
+          body,
+          icon: '/favicon.ico',
+          tag,
+          renotify: true,
+          requireInteraction: true // Stays visible until clicked so gamers never miss it!
+        })
+        notif.onclick = () => {
+          window.focus()
+          notif.close()
+        }
+      } catch (e) {
+        console.warn('Desktop notification error:', e)
+      }
+    }
   }
 
   const getMarketSession = () => {
@@ -193,15 +285,89 @@ export default function QuickScalpDeskModal({
   }
   const handleCopyWebull = handleCopyTicket
 
-  const handleLoadPosition = (contract) => {
-    setActiveTrade(contract)
-    setTradeEntryPrice(contract.price_per_share)
-    setTradeCurrentPrice(contract.price_per_share)
-    setElapsedSeconds(0)
-    setIsTimerRunning(true)
+  // Check for any matching open option position when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const port = getPortfolio()
+        const match = port.positions.find(p => p.symbol.startsWith(symbol) && p.assetType === 'Option')
+        if (match) {
+          setActivePositionId(match.id)
+          setTradeEntryPrice(match.entryPrice)
+          setTradeCurrentPrice(match.entryPrice)
+          const qty = Math.max(1, Math.round(match.quantity / 100))
+          setContractQty(qty)
+          setIsTimerRunning(true)
+        }
+      } catch (e) {}
+    }
+  }, [isOpen, symbol])
+
+  const handleExecutePaperScalp = () => {
+    setStatusMsg(null)
+    setPositionClosedNotice(null)
+    const target = activeTrade || scalpData?.top_recommendation
+    if (!target) return
+
+    const unitCost = Number(target.price_per_share || (target.contract_cost / 100))
+    const totalCost = Number((target.contract_cost * contractQty).toFixed(2))
+
+    const res = openPosition({
+      symbol: target.contract_symbol || `${symbol} ${target.strike}${target.type === 'CALL' ? 'C' : 'P'}`,
+      assetType: 'Option',
+      entryPrice: unitCost,
+      amount: totalCost,
+      takeProfit: target.sell_target_1,
+      stopLoss: target.stop_loss_exit,
+      reason: `0DTE Scalp ${target.contract_symbol || symbol} (${contractQty}x contract, Max Risk $${totalCost.toFixed(2)})`
+    })
+
+    if (res.success) {
+      setActivePositionId(res.position.id)
+      setActiveTrade(target)
+      setTradeEntryPrice(unitCost)
+      setTradeCurrentPrice(unitCost)
+      setIsTimerRunning(true)
+      setElapsedSeconds(0)
+      setStatusMsg(`✅ Executed ${contractQty}x contract ($${totalCost.toFixed(2)}) paper trade! Tracking live.`)
+    } else {
+      setStatusMsg(`❌ ${res.message}`)
+    }
   }
 
-  if (!isOpen) return null
+  const handleClosePaperPosition = () => {
+    const currentP = Number(tradeCurrentPrice)
+    if (activePositionId) {
+      const res = closePosition(activePositionId, currentP)
+      if (res.success) {
+        const closed = res.closedTrade
+        setPositionClosedNotice({
+          pnlDollar: closed.pnlDollar,
+          pnlPercent: closed.pnlPercent,
+          outcome: closed.outcome,
+          exitPrice: currentP
+        })
+        setActivePositionId(null)
+        setIsTimerRunning(false)
+        playSignalSound(closed.pnlDollar >= 0 ? 'PROFIT' : 'STOP')
+        setStatusMsg(`🎉 Sold at $${currentP.toFixed(2)}! Net PnL: ${closed.pnlDollar >= 0 ? '+' : ''}$${closed.pnlDollar.toFixed(2)} (${closed.pnlPercent >= 0 ? '+' : ''}${closed.pnlPercent.toFixed(1)}%) banked to balance.`)
+      }
+    } else {
+      const totalC = costTotal
+      const exitVal = currentTotal
+      const diff = exitVal - totalC
+      const pct = totalC > 0 ? (diff / totalC) * 100 : 0
+      setPositionClosedNotice({
+        pnlDollar: diff,
+        pnlPercent: pct,
+        outcome: diff >= 0 ? 'WIN' : 'LOSS',
+        exitPrice: currentP
+      })
+      setIsTimerRunning(false)
+      playSignalSound(diff >= 0 ? 'PROFIT' : 'STOP')
+      setStatusMsg(`🎉 Paper scalp closed at $${currentP.toFixed(2)}! Net PnL: ${diff >= 0 ? '+' : ''}$${diff.toFixed(2)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)`)
+    }
+  }
 
   // Calculate live active scalp metrics
   const costTotal = Math.round(tradeEntryPrice * 100 * contractQty)
@@ -222,12 +388,79 @@ export default function QuickScalpDeskModal({
 
   // Audio alert triggers when price hits profit or stop
   useEffect(() => {
+    if (!isOpen) return
     if (isTarget2Hit || isTarget1Hit) {
       playSignalSound('PROFIT')
     } else if (isStopLossHit) {
       playSignalSound('STOP')
     }
-  }, [isTarget1Hit, isTarget2Hit, isStopLossHit])
+  }, [isOpen, isTarget1Hit, isTarget2Hit, isStopLossHit])
+
+  // Flashing window title for background gaming tabs
+  useEffect(() => {
+    if (!isOpen) return
+    let interval = null
+    const originalTitle = 'WEHAWT QUANT'
+    if (isTarget2Hit || isTarget1Hit || isStopLossHit) {
+      const alertLabel = isTarget2Hit ? '🚀 +60% PROFIT!' : isTarget1Hit ? '🎯 +25% TARGET!' : '🔴 STOP LOSS!'
+      interval = setInterval(() => {
+        document.title = document.title === originalTitle ? `(🚨 ${alertLabel}) ${symbol}` : originalTitle
+      }, 800)
+    } else {
+      document.title = originalTitle
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+      document.title = originalTitle
+    }
+  }, [isOpen, isTarget1Hit, isTarget2Hit, isStopLossHit, symbol])
+
+  // Desktop push notification triggers (visible over video games)
+  useEffect(() => {
+    if (!isOpen) return
+    if (isTarget2Hit) {
+      sendDesktopNotification(
+        `🚀 RUNNER TARGET 2 HIT (+60%)!`,
+        `Your ${symbol} scalp reached $${tradeCurrentPrice.toFixed(2)} (+${pnlDollars >= 0 ? '+' : ''}$${pnlDollars.toFixed(2)}). Sell remaining contracts now!`,
+        'target-2'
+      )
+    } else if (isTarget1Hit) {
+      sendDesktopNotification(
+        `🎯 TAKE PROFIT TARGET 1 REACHED (+25%)!`,
+        `Your ${symbol} scalp is at $${tradeCurrentPrice.toFixed(2)} (+$${pnlDollars.toFixed(2)}). Sell 1st contract to lock in green!`,
+        'target-1'
+      )
+    } else if (isStopLossHit) {
+      sendDesktopNotification(
+        `🔴 STOP LOSS TRIGGERED (-22%)!`,
+        `Your ${symbol} scalp dropped to $${tradeCurrentPrice.toFixed(2)} (-$${Math.abs(pnlDollars).toFixed(2)}). Cut the position immediately!`,
+        'stop-loss'
+      )
+    } else if (isTimeLimitWarning) {
+      sendDesktopNotification(
+        `⏳ 15-MINUTE TIME STOP REACHED`,
+        `Your ${symbol} position has been open 15 mins with no breakout. Close to avoid theta decay!`,
+        'time-stop'
+      )
+    }
+  }, [isOpen, isTarget1Hit, isTarget2Hit, isStopLossHit, isTimeLimitWarning, symbol, tradeCurrentPrice, pnlDollars])
+
+  // Custom Price Alert Trigger
+  useEffect(() => {
+    if (!isOpen) return
+    if (customAlertActive && !customAlertFired && customAlertPrice) {
+      const targetP = parseFloat(customAlertPrice)
+      if (!isNaN(targetP) && tradeCurrentPrice >= targetP) {
+        setCustomAlertFired(true)
+        playSignalSound('CUSTOM')
+        sendDesktopNotification(
+          `🔔 CUSTOM PRICE TARGET REACHED!`,
+          `${symbol} option hit your target of $${targetP.toFixed(2)} (Current: $${tradeCurrentPrice.toFixed(2)})!`,
+          'custom-alert'
+        )
+      }
+    }
+  }, [isOpen, tradeCurrentPrice, customAlertPrice, customAlertActive, customAlertFired, symbol])
 
   // Webull URL
   const cleanSym = symbol.replace('-USD', '').toLowerCase()
@@ -238,6 +471,17 @@ export default function QuickScalpDeskModal({
     const secs = totalSec % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
+
+  // Paper Trading Streak & Performance Stats
+  const paperStats = useMemo(() => {
+    try {
+      return calculatePortfolioStats(getPortfolio())
+    } catch (e) {
+      return null
+    }
+  }, [isOpen, statusMsg, positionClosedNotice])
+
+  if (!isOpen) return null
 
   return (
     <AnimatePresence>
@@ -519,6 +763,67 @@ export default function QuickScalpDeskModal({
                           )}
                         </div>
 
+                        {/* Official OCC Exchange Contract & Slippage Verification */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          flexWrap: 'wrap',
+                          margin: '0.35rem 0 0.55rem 0',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          background: 'rgba(2, 132, 199, 0.08)',
+                          border: '1px solid rgba(2, 132, 199, 0.25)',
+                          fontSize: '0.74rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <ShieldCheck size={14} style={{ color: '#38bdf8' }} />
+                            <span style={{ color: '#94a3b8', fontWeight: 600 }}>OCC SYMBOL:</span>
+                            <span style={{ color: '#f8fafc', fontWeight: 700, letterSpacing: '0.5px' }}>
+                              {scalpData.top_recommendation.contract_symbol || `${symbol} OPTION`}
+                            </span>
+                            <button
+                              onClick={() => handleCopyTicket(scalpData.top_recommendation.contract_symbol || scalpData.top_recommendation.webull_ticker, 'occ-hero')}
+                              style={{
+                                background: 'rgba(255,255,255,0.08)',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                color: copiedId === 'occ-hero' ? '#10b981' : '#cbd5e1',
+                                borderRadius: '3px',
+                                padding: '1px 6px',
+                                fontSize: '0.68rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="Copy official OCC Clearing symbol for broker"
+                            >
+                              {copiedId === 'occ-hero' ? <Check size={10} /> : <Copy size={10} />}
+                              <span>{copiedId === 'occ-hero' ? 'Copied' : 'Copy'}</span>
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
+                            <span>
+                              Bid/Ask: <strong style={{ color: '#f8fafc' }}>${scalpData.top_recommendation.bid ?? '—'} / ${scalpData.top_recommendation.ask ?? '—'}</strong>
+                            </span>
+                            <span style={{
+                              padding: '1px 6px',
+                              borderRadius: '3px',
+                              background: (scalpData.top_recommendation.spread <= 0.02) ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                              color: (scalpData.top_recommendation.spread <= 0.02) ? '#10b981' : '#f59e0b',
+                              fontWeight: 700
+                            }}>
+                              Spread: ${scalpData.top_recommendation.spread !== undefined ? scalpData.top_recommendation.spread.toFixed(2) : '0.01'} ({scalpData.top_recommendation.spread_safety || 'LOW SLIPPAGE'})
+                            </span>
+                            {scalpData.top_recommendation.implied_volatility !== undefined && (
+                              <span style={{ color: '#c084fc', fontWeight: 600 }}>
+                                📊 IV: {scalpData.top_recommendation.implied_volatility}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
                         <p className="hero-explanation">
                           {scalpData.top_recommendation.type === 'CALL'
                             ? `Bullish Momentum: ${symbol} is pushing upwards. If it moves +$1 to +$2 in the next 15 minutes, this cheap call can surge +25% to +60%.`
@@ -567,6 +872,15 @@ export default function QuickScalpDeskModal({
                       >
                         {copiedId === 'hero' ? <Check size={13} /> : <Copy size={13} />}
                         <span>{copiedId === 'hero' ? 'Copied to Clipboard!' : 'Copy Webull Order Ticket'}</span>
+                      </button>
+
+                      <button
+                        className="btn-load-tracker"
+                        style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderColor: '#10b981', color: '#fff' }}
+                        onClick={handleExecutePaperScalp}
+                      >
+                        <Zap size={13} />
+                        <span>Execute Paper Scalp (${(parseFloat(scalpData.top_recommendation.contract_cost) * contractQty).toFixed(2)})</span>
                       </button>
 
                       <button
@@ -638,11 +952,16 @@ export default function QuickScalpDeskModal({
                     {/* Position Details Inputs */}
                     <div className="tracker-inputs-col">
                       <span className="sub-label">YOUR CONTRACT:</span>
-                      <div className="contract-preview-badge">
-                        {symbol} {scalpData.top_recommendation?.expiration} ${scalpData.top_recommendation?.strike} {scalpData.top_recommendation?.type}
+                      <div className="contract-preview-badge" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                        <span>{symbol} {(activeTrade || scalpData.top_recommendation)?.expiration} ${(activeTrade || scalpData.top_recommendation)?.strike} {(activeTrade || scalpData.top_recommendation)?.type}</span>
+                        {(activeTrade || scalpData.top_recommendation)?.contract_symbol && (
+                          <span style={{ fontSize: '0.70rem', color: '#38bdf8', fontWeight: 700, letterSpacing: '0.3px', background: 'rgba(2, 132, 199, 0.15)', padding: '1px 6px', borderRadius: '3px' }}>
+                            🛡️ {(activeTrade || scalpData.top_recommendation).contract_symbol}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Quantity & Sound Bar */}
+                      {/* Quantity Bar */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0.35rem 0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>QTY:</span>
@@ -657,25 +976,167 @@ export default function QuickScalpDeskModal({
                             </button>
                           ))}
                         </div>
+                      </div>
 
-                        <button
-                          onClick={() => setSoundEnabled(!soundEnabled)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            background: 'none',
-                            border: 'none',
-                            color: soundEnabled ? '#10b981' : '#64748b',
-                            fontSize: '0.72rem',
-                            cursor: 'pointer',
-                            padding: '2px 4px'
-                          }}
-                          title={soundEnabled ? 'Audio alert enabled for sell signals' : 'Audio alert muted'}
-                        >
-                          <Bell size={12} />
-                          <span>{soundEnabled ? 'Chime ON' : 'Muted'}</span>
-                        </button>
+                      {/* Gamer & Background Alerts Customization Suite */}
+                      <div style={{
+                        margin: '0.45rem 0 0.65rem 0',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        background: 'rgba(15, 23, 42, 0.65)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        fontSize: '0.74rem'
+                      }}>
+                        {/* Top Controls Row */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              onClick={requestNotificationPermission}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.70rem',
+                                fontWeight: 700,
+                                background: notifPermission === 'granted' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(2, 132, 199, 0.18)',
+                                border: `1px solid ${notifPermission === 'granted' ? '#10b981' : '#0284c7'}`,
+                                color: notifPermission === 'granted' ? '#10b981' : '#38bdf8',
+                                cursor: 'pointer'
+                              }}
+                              title="Trigger Windows desktop notifications so you never miss a sell target while playing video games"
+                            >
+                              <Bell size={11} />
+                              <span>{notifPermission === 'granted' ? '🔔 Game Push Alerts: ON' : '🔔 Enable Game Push Alerts'}</span>
+                            </button>
+
+                            {/* Sound Mode Selector */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <button
+                                onClick={() => setSoundMode('GAMER')}
+                                style={{
+                                  padding: '2px 6px',
+                                  fontSize: '0.68rem',
+                                  borderRadius: '3px',
+                                  background: soundMode === 'GAMER' ? '#10b981' : 'rgba(255,255,255,0.06)',
+                                  color: soundMode === 'GAMER' ? '#000' : '#94a3b8',
+                                  fontWeight: soundMode === 'GAMER' ? 800 : 500,
+                                  border: 'none',
+                                  cursor: 'pointer'
+                                }}
+                                title="High-frequency loud 4-tone arpeggio designed to pierce through game audio and headsets"
+                              >
+                                🎮 Gamer Loud
+                              </button>
+                              <button
+                                onClick={() => setSoundMode('CHIME')}
+                                style={{
+                                  padding: '2px 6px',
+                                  fontSize: '0.68rem',
+                                  borderRadius: '3px',
+                                  background: soundMode === 'CHIME' ? '#38bdf8' : 'rgba(255,255,255,0.06)',
+                                  color: soundMode === 'CHIME' ? '#000' : '#94a3b8',
+                                  fontWeight: soundMode === 'CHIME' ? 800 : 500,
+                                  border: 'none',
+                                  cursor: 'pointer'
+                                }}
+                                title="Smooth gentle 2-tone melodic chime"
+                              >
+                                🔔 Chime
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Volume & Test Controls */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              onClick={() => {
+                                if (soundVolume === 0.30) setSoundVolume(0.15)
+                                else if (soundVolume === 0.15) setSoundVolume(0)
+                                else setSoundVolume(0.30)
+                              }}
+                              style={{
+                                background: 'none',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '3px',
+                                padding: '2px 6px',
+                                fontSize: '0.68rem',
+                                color: soundVolume > 0 ? '#e2e8f0' : '#64748b',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}
+                              title="Toggle audio alert volume level"
+                            >
+                              {soundVolume > 0 ? <Volume2 size={11} /> : <VolumeX size={11} />}
+                              <span>{soundVolume === 0.30 ? 'Loud 100%' : soundVolume === 0.15 ? 'Med 50%' : 'Muted'}</span>
+                            </button>
+
+                            <button
+                              onClick={() => playSignalSound('PROFIT')}
+                              style={{
+                                background: 'rgba(255,255,255,0.08)',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '3px',
+                                padding: '2px 6px',
+                                fontSize: '0.68rem',
+                                color: '#38bdf8',
+                                cursor: 'pointer'
+                              }}
+                              title="Play a test sound to calibrate your headset volume"
+                            >
+                              Test Sound 🔊
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Custom Price Alert Sub-bar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', paddingTop: '5px', borderTop: '1px dashed rgba(255,255,255,0.08)' }}>
+                          <span style={{ color: '#94a3b8', fontSize: '0.70rem', fontWeight: 600 }}>Custom Price Alert:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.4)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.12)', padding: '1px 6px' }}>
+                            <span style={{ color: '#94a3b8', fontSize: '0.70rem' }}>$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder={target1Price.toFixed(2)}
+                              value={customAlertPrice}
+                              onChange={(e) => {
+                                setCustomAlertPrice(e.target.value)
+                                setCustomAlertFired(false)
+                              }}
+                              style={{
+                                width: '55px',
+                                background: 'none',
+                                border: 'none',
+                                color: '#f8fafc',
+                                fontSize: '0.72rem',
+                                padding: '2px 4px',
+                                outline: 'none'
+                              }}
+                            />
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (!customAlertPrice) setCustomAlertPrice(target1Price.toFixed(2))
+                              setCustomAlertActive(!customAlertActive)
+                              setCustomAlertFired(false)
+                            }}
+                            style={{
+                              padding: '2px 8px',
+                              fontSize: '0.70rem',
+                              borderRadius: '3px',
+                              background: customAlertActive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255,255,255,0.06)',
+                              border: `1px solid ${customAlertActive ? '#10b981' : 'rgba(255,255,255,0.15)'}`,
+                              color: customAlertActive ? '#10b981' : '#cbd5e1',
+                              fontWeight: customAlertActive ? 700 : 500,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {customAlertActive ? (customAlertFired ? '✅ Alert Fired!' : '🟢 Alert Armed') : '+ Arm Price Alert'}
+                          </button>
+                        </div>
                       </div>
 
                       <div className="price-inputs-row">
@@ -782,6 +1243,60 @@ export default function QuickScalpDeskModal({
                             </span>
                           )}
                         </div>
+
+                        {/* Interactive Sell / Close Action Bar */}
+                        <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <button
+                            onClick={handleClosePaperPosition}
+                            style={{
+                              width: '100%',
+                              padding: '9px 14px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              fontWeight: 800,
+                              fontSize: '0.84rem',
+                              background: isTarget2Hit || isTarget1Hit
+                                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                                : isStopLossHit
+                                ? 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)'
+                                : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                              color: '#ffffff',
+                              boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <Zap size={15} />
+                            <span>
+                              {isTarget2Hit
+                                ? `SELL NOW: LOCK IN +60% RUNNER (+${pnlDollars >= 0 ? '+' : ''}$${pnlDollars.toFixed(2)})`
+                                : isTarget1Hit
+                                ? `SELL 1ST CONTRACT: BANK +25% PROFIT (+${pnlDollars >= 0 ? '+' : ''}$${pnlDollars.toFixed(2)})`
+                                : isStopLossHit
+                                ? `CUT LOSS AT STOP-LOSS (-$${Math.abs(pnlDollars).toFixed(2)})`
+                                : `SELL / CLOSE POSITION NOW AT $${tradeCurrentPrice.toFixed(2)} (${pnlDollars >= 0 ? '+' : ''}$${pnlDollars.toFixed(2)})`}
+                            </span>
+                          </button>
+
+                          {positionClosedNotice && (
+                            <div style={{
+                              padding: '6px 10px',
+                              borderRadius: '4px',
+                              background: positionClosedNotice.pnlDollar >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              border: `1px solid ${positionClosedNotice.pnlDollar >= 0 ? '#10b981' : '#ef4444'}`,
+                              color: positionClosedNotice.pnlDollar >= 0 ? '#10b981' : '#ef4444',
+                              fontSize: '0.74rem',
+                              textAlign: 'center',
+                              fontWeight: 700
+                            }}>
+                              ✅ Scalp position closed & banked to Paper Portfolio! PnL: {positionClosedNotice.pnlDollar >= 0 ? '+' : ''}${positionClosedNotice.pnlDollar.toFixed(2)} ({positionClosedNotice.pnlPercent >= 0 ? '+' : ''}${positionClosedNotice.pnlPercent.toFixed(1)}%)
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -802,14 +1317,26 @@ export default function QuickScalpDeskModal({
                             <span className={`badge-type ${c.type === 'CALL' ? 'call' : 'put'}`}>{c.type}</span>
                             <span className="strike-val">${c.strike}</span>
                             <span className="exp-val">Exp: {c.expiration}</span>
+                            {c.contract_symbol && (
+                              <span style={{ fontSize: '0.67rem', color: '#38bdf8', letterSpacing: '0.3px', fontWeight: 600 }}>
+                                🛡️ {c.contract_symbol}
+                              </span>
+                            )}
                           </div>
 
                           <div className="col-pricing">
                             <span className="cost-val">${parseFloat(c.contract_cost).toFixed(2)}</span>
                             <span className="share-val">(${parseFloat(c.price_per_share).toFixed(2)}/sh)</span>
                             <span className="vol-val">Vol: {c.volume ? c.volume.toLocaleString() : '0'}</span>
-                            {c.vol_oi_ratio && (
-                              <span style={{ fontSize: '0.68rem', color: '#06b6d4', fontWeight: 600 }}>({c.vol_oi_ratio}x OI)</span>
+                            {c.spread !== undefined && (
+                              <span style={{ fontSize: '0.68rem', color: c.spread <= 0.02 ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                                Spread: ${c.spread.toFixed(2)}
+                              </span>
+                            )}
+                            {c.implied_volatility !== undefined && (
+                              <span style={{ fontSize: '0.68rem', color: '#c084fc', fontWeight: 600 }}>
+                                IV: {c.implied_volatility}%
+                              </span>
                             )}
                           </div>
 
@@ -855,28 +1382,52 @@ export default function QuickScalpDeskModal({
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
               <button
                 className="paper-sim-btn font-mono"
-                onClick={() => {
-                  setStatusMsg(null)
-                  const top = scalpData?.top_recommendation
-                  if (top) {
-                    const res = openPosition({
-                      symbol: `${symbol} ${top.strike}${top.type === 'CALL' ? 'C' : 'P'}`,
-                      assetType: 'Option',
-                      entryPrice: top.price_per_share,
-                      amount: top.contract_cost,
-                      takeProfit: top.contract_cost * 1.25,
-                      stopLoss: top.contract_cost * 0.78,
-                      reason: `Scalp Trade on ${symbol} ($${top.contract_cost} risk)`
-                    })
-                    if (res.success) {
-                      setStatusMsg('✅ Executed $30 paper scalp contract in your portfolio!')
-                    }
-                  }
-                }}
+                onClick={handleExecutePaperScalp}
               >
                 <Zap size={13} />
-                <span>Simulate Scalp in Paper Trading (${budget})</span>
+                <span>Simulate Scalp in Paper Trading (${(parseFloat(scalpData?.top_recommendation?.contract_cost || budget) * contractQty).toFixed(2)})</span>
               </button>
+
+              {paperStats && paperStats.totalClosed > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    color: paperStats.streakType === 'WIN' ? '#10b981' : paperStats.streakType === 'LOSS' ? '#ef4444' : '#94a3b8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    background: paperStats.streakType === 'WIN' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    border: `1px solid ${paperStats.streakType === 'WIN' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                  }}>
+                    <Flame size={12} />
+                    <span>{paperStats.currentStreakBadge}</span>
+                  </span>
+
+                  <button
+                    onClick={() => exportPortfolioHistoryToCSV(getPortfolio())}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: 'rgba(2, 132, 199, 0.1)',
+                      border: '1px solid rgba(2, 132, 199, 0.3)',
+                      borderRadius: '4px',
+                      padding: '3px 8px',
+                      color: '#38bdf8',
+                      fontSize: '0.70rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    title="Download trade history as a CSV file"
+                  >
+                    <Download size={11} />
+                    <span>CSV Ledger</span>
+                  </button>
+                </div>
+              )}
 
               {statusMsg && (
                 <span className="footer-status-text font-mono">{statusMsg}</span>
