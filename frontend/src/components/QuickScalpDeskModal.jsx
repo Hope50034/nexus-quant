@@ -52,6 +52,7 @@ export default function QuickScalpDeskModal({
   const [loading, setLoading] = useState(false)
   const [scalpData, setScalpData] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
+  const [showPlaybookGuide, setShowPlaybookGuide] = useState(true)
 
   // Active Position Tracker State
   const [activeTrade, setActiveTrade] = useState(null)
@@ -729,6 +730,75 @@ export default function QuickScalpDeskModal({
                       </div>
                     )}
 
+                    {/* 1-Minute Scalp Playbook: When to Buy & When to Stop */}
+                    <div style={{
+                      marginBottom: '12px',
+                      borderRadius: '8px',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      overflow: 'hidden'
+                    }}>
+                      <div
+                        onClick={() => setShowPlaybookGuide(!showPlaybookGuide)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 12px',
+                          background: 'linear-gradient(90deg, rgba(2, 132, 199, 0.2) 0%, rgba(15, 23, 42, 0.4) 100%)',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.85rem' }}>🎯</span>
+                          <span style={{ fontWeight: 800, fontSize: '0.78rem', color: '#38bdf8', letterSpacing: '0.3px' }}>
+                            1-MINUTE CHEAT SHEET: EXACTLY WHEN TO BUY & WHEN TO STOP
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', background: 'rgba(255,255,255,0.06)', padding: '2px 7px', borderRadius: '4px' }}>
+                          {showPlaybookGuide ? '▲ Collapse' : '▼ View Rules'}
+                        </span>
+                      </div>
+
+                      {showPlaybookGuide && (
+                        <div style={{ padding: '10px 14px', fontSize: '0.75rem', lineHeight: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '10px' }}>
+                            {/* WHEN TO BUY */}
+                            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '6px', padding: '9px 11px' }}>
+                              <div style={{ color: '#10b981', fontWeight: 800, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>🟢</span> WHEN TO BUY (3 GREEN LIGHTS):
+                              </div>
+                              <ul style={{ margin: 0, paddingLeft: '16px', color: '#cbd5e1', spaceY: '4px' }}>
+                                <li><strong style={{ color: '#f8fafc' }}>Trend Confluence:</strong> If price &gt; VWAP and 9 EMA &gt; 21 EMA, buy <strong>CALLS</strong>. If price &lt; VWAP and 9 EMA &lt; 21 EMA, buy <strong>PUTS</strong>.</li>
+                                <li><strong style={{ color: '#f8fafc' }}>Tight Spread:</strong> Bid/Ask spread must be <strong>$0.01 – $0.02</strong>. Never buy wide spreads ($0.05+).</li>
+                                <li><strong style={{ color: '#f8fafc' }}>Order Execution:</strong> Place a <strong>Limit Order at Bid or Mid-Price</strong> on Webull. Never use Market Orders!</li>
+                              </ul>
+                            </div>
+
+                            {/* WHEN TO STOP / EXIT */}
+                            <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '6px', padding: '9px 11px' }}>
+                              <div style={{ color: '#ef4444', fontWeight: 800, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>🔴</span> WHEN TO STOP / SELL (3 HARD RULES):
+                              </div>
+                              <ul style={{ margin: 0, paddingLeft: '16px', color: '#cbd5e1', spaceY: '4px' }}>
+                                <li><strong style={{ color: '#10b981' }}>Target 1 (+25%):</strong> Sell 1st contract / 50% to bank cash. Move stop-loss to entry on rest.</li>
+                                <li><strong style={{ color: '#10b981' }}>Runner Target 2 (+60%):</strong> Sell remaining contracts. Do not get greedy!</li>
+                                <li><strong style={{ color: '#ef4444' }}>Hard Stop (-22%):</strong> Cut immediately if down -22%. <em>Never hold a losing 0DTE to zero.</em></li>
+                                <li><strong style={{ color: '#f59e0b' }}>15-Min Time Stop:</strong> If no breakout in 15 mins, exit at breakeven before theta decay starts.</li>
+                              </ul>
+                            </div>
+                          </div>
+
+                          {/* Data Mismatch Explainer */}
+                          <div style={{ padding: '6px 10px', borderRadius: '5px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', color: '#fde68a', fontSize: '0.71rem' }}>
+                            <strong style={{ color: '#fbbf24' }}>💡 Why prices may differ from Webull / Broker:</strong> Free public exchange feeds (Yahoo Finance) are delayed by ~15 mins and freeze outside NYSE market hours (9:30 AM – 4:00 PM EST). Webull uses live real-time OPRA feeds. 
+                            Look up the OCC code on Webull, enter using Webull's live Bid/Ask, and click <strong>"Sync With My Broker Fill Price"</strong> below to track your real-time dollar profit with exact mathematical accuracy!
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="hero-badge-row">
                       <span className="hero-status-tag">
                         <Sparkles size={13} />
@@ -1151,39 +1221,109 @@ export default function QuickScalpDeskModal({
                         </div>
                       </div>
 
+                      {/* Quick Sync from Orderbook */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        marginBottom: '8px',
+                        padding: '6px 8px',
+                        borderRadius: '4px',
+                        background: 'rgba(2, 132, 199, 0.1)',
+                        border: '1px dashed rgba(56, 189, 248, 0.3)'
+                      }}>
+                        <span style={{ fontSize: '0.70rem', color: '#38bdf8', fontWeight: 700 }}>
+                          ⚡ QUICK SYNC FROM LIVE ORDERBOOK:
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {scalpData?.top_recommendation?.ask && (
+                            <button
+                              onClick={() => {
+                                const ask = parseFloat(scalpData.top_recommendation.ask)
+                                setTradeEntryPrice(ask)
+                                setTradeCurrentPrice(ask)
+                              }}
+                              style={{
+                                padding: '2px 6px',
+                                fontSize: '0.68rem',
+                                borderRadius: '3px',
+                                background: 'rgba(255,255,255,0.08)',
+                                color: '#e2e8f0',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                cursor: 'pointer'
+                              }}
+                              title="Set price to current Ask quote"
+                            >
+                              Ask: ${scalpData.top_recommendation.ask}
+                            </button>
+                          )}
+                          {scalpData?.top_recommendation?.bid && (
+                            <button
+                              onClick={() => {
+                                const bid = parseFloat(scalpData.top_recommendation.bid)
+                                setTradeEntryPrice(bid)
+                                setTradeCurrentPrice(bid)
+                              }}
+                              style={{
+                                padding: '2px 6px',
+                                fontSize: '0.68rem',
+                                borderRadius: '3px',
+                                background: 'rgba(255,255,255,0.08)',
+                                color: '#e2e8f0',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                cursor: 'pointer'
+                              }}
+                              title="Set price to current Bid quote"
+                            >
+                              Bid: ${scalpData.top_recommendation.bid}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                       <div className="price-inputs-row">
                         <div className="p-input-box">
-                          <label>You Paid (Per Share):</label>
+                          <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>You Paid (Broker Fill):</span>
+                            <span style={{ color: '#10b981', fontSize: '0.68rem' }}>Limit Fill</span>
+                          </label>
                           <div className="input-wrap">
                             <span>$</span>
                             <input
                               type="number"
                               step="0.01"
                               value={tradeEntryPrice}
-                              onChange={(e) => setTradeEntryPrice(parseFloat(e.target.value) || 0.30)}
+                              onChange={(e) => setTradeEntryPrice(parseFloat(e.target.value) || 0.15)}
                             />
                           </div>
-                          <span className="hint">Total Cost: ${costTotal}</span>
+                          <span className="hint">Total Entry Cost: ${costTotal}</span>
                         </div>
 
                         <div className="p-input-box">
-                          <label>Current Option Price:</label>
+                          <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Live Option Price:</span>
+                            <span style={{ color: '#38bdf8', fontSize: '0.68rem' }}>Webull Tick</span>
+                          </label>
                           <div className="input-wrap">
                             <span>$</span>
                             <input
                               type="number"
                               step="0.01"
                               value={tradeCurrentPrice}
-                              onChange={(e) => setTradeCurrentPrice(parseFloat(e.target.value) || 0.30)}
+                              onChange={(e) => setTradeCurrentPrice(parseFloat(e.target.value) || 0.15)}
                             />
                           </div>
                           <span className="hint">Current Value: ${currentTotal}</span>
                         </div>
                       </div>
 
-                      {/* Live Quick Simulation Buttons */}
+                      {/* Live Quick Simulation / Tick Stepper Buttons */}
                       <div className="quick-sim-buttons">
-                        <span className="sim-label">SIMULATE TICK:</span>
+                        <span className="sim-label">LIVE TICK CONTROLS:</span>
+                        <button onClick={() => setTradeCurrentPrice((prev) => parseFloat(Math.max(0.01, prev - 0.01).toFixed(2)))} className="sim-pill red">-1¢ Tick</button>
+                        <button onClick={() => setTradeCurrentPrice((prev) => parseFloat((prev + 0.01).toFixed(2)))} className="sim-pill green">+1¢ Tick</button>
                         <button onClick={() => setTradeCurrentPrice(parseFloat((tradeEntryPrice * 0.78).toFixed(2)))} className="sim-pill red">-22% Drop</button>
                         <button onClick={() => setTradeCurrentPrice(tradeEntryPrice)} className="sim-pill">Breakeven</button>
                         <button onClick={() => setTradeCurrentPrice(parseFloat((tradeEntryPrice * 1.25).toFixed(2)))} className="sim-pill green">+25% Pop</button>
