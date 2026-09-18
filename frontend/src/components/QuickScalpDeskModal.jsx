@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap,
@@ -75,6 +75,7 @@ export default function QuickScalpDeskModal({
   const [customAlertFired, setCustomAlertFired] = useState(false)
   const [activePositionId, setActivePositionId] = useState(null)
   const [positionClosedNotice, setPositionClosedNotice] = useState(null)
+  const monitorRef = useRef(null)
 
   const playSignalSound = (type, customMode = soundMode) => {
     if (!soundEnabled || soundVolume <= 0) return
@@ -379,7 +380,12 @@ export default function QuickScalpDeskModal({
     setIsTimerRunning(true)
     setElapsedSeconds(0)
     setCustomAlertFired(false)
-    setStatusMsg(`📡 Tracking ${contract.contract_symbol || contract.strike} live. Sell signal engine active!`)
+    setStatusMsg(`🟢 Position Activated! Now tracking ${contract.contract_symbol || contract.strike} with real-time HOLD / SELL / CUT signals.`)
+    setTimeout(() => {
+      if (monitorRef.current) {
+        monitorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 80)
   }
 
   // Calculate live active scalp metrics
@@ -958,26 +964,42 @@ export default function QuickScalpDeskModal({
 
                       <button
                         className="btn-load-tracker"
-                        style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderColor: '#10b981', color: '#fff' }}
-                        onClick={handleExecutePaperScalp}
+                        style={{
+                          background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                          border: '2px solid #34d399',
+                          color: '#ffffff',
+                          fontWeight: 900,
+                          fontSize: '0.84rem',
+                          padding: '10px 18px',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          boxShadow: '0 0 16px rgba(16, 185, 129, 0.45)'
+                        }}
+                        onClick={() => handleLoadPosition(scalpData.top_recommendation)}
+                        title="Click here the moment you buy on Webull to start tracking live sell/hold signals!"
                       >
-                        <Zap size={13} />
-                        <span>Execute Paper Scalp (${(parseFloat(scalpData.top_recommendation.contract_cost) * contractQty).toFixed(2)})</span>
+                        <Zap size={16} style={{ fill: '#34d399', color: '#34d399' }} />
+                        <span>🟢 I BOUGHT THIS! (START LIVE POSITION TRACKER)</span>
                       </button>
 
                       <button
                         className="btn-load-tracker"
-                        onClick={() => handleLoadPosition(scalpData.top_recommendation)}
+                        style={{ background: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.2)', color: '#cbd5e1' }}
+                        onClick={handleExecutePaperScalp}
+                        title="Simulate buying this contract in paper trading"
                       >
                         <Clock size={13} />
-                        <span>Track Position with Live Sell Signals</span>
+                        <span>Paper Trade (${(parseFloat(scalpData.top_recommendation.contract_cost) * contractQty).toFixed(2)})</span>
                       </button>
                     </div>
                   </div>
                 )}
 
                 {/* 2. Live Active Scalp Position & Sell Signal Monitor */}
-                <div className="active-tracker-card">
+                <div className="active-tracker-card" ref={monitorRef}>
                   <div className="tracker-header">
                     <div className="tracker-title-group">
                       <div className="pulse-indicator-dot" />
@@ -1333,6 +1355,41 @@ export default function QuickScalpDeskModal({
 
                     {/* Dynamic Real-Time Sell Signal Engine */}
                     <div className="tracker-signal-col">
+                      {/* Massive Signal Traffic Light Badge */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        fontWeight: 900,
+                        fontSize: '0.96rem',
+                        letterSpacing: '0.4px',
+                        textAlign: 'center',
+                        background: isTarget2Hit || isTarget1Hit 
+                          ? 'rgba(16, 185, 129, 0.28)' 
+                          : isStopLossHit 
+                          ? 'rgba(239, 68, 68, 0.28)' 
+                          : isTimeLimitWarning 
+                          ? 'rgba(245, 158, 11, 0.28)' 
+                          : 'rgba(2, 132, 199, 0.22)',
+                        border: `2px solid ${isTarget2Hit || isTarget1Hit ? '#10b981' : isStopLossHit ? '#ef4444' : isTimeLimitWarning ? '#f59e0b' : '#38bdf8'}`,
+                        color: isTarget2Hit || isTarget1Hit ? '#34d399' : isStopLossHit ? '#f87171' : isTimeLimitWarning ? '#fbbf24' : '#38bdf8',
+                        boxShadow: isTarget2Hit || isTarget1Hit 
+                          ? '0 0 22px rgba(16, 185, 129, 0.45)' 
+                          : isStopLossHit 
+                          ? '0 0 22px rgba(239, 68, 68, 0.45)' 
+                          : 'none',
+                        marginBottom: '10px'
+                      }}>
+                        {isTarget2Hit ? '🚀 CURRENT SIGNAL: SELL ALL (RUNNER TARGET +60% HIT)'
+                         : isTarget1Hit ? '🎯 CURRENT SIGNAL: SELL 1ST CONTRACT (PROFIT +25% HIT)'
+                         : isStopLossHit ? '🛑 CURRENT SIGNAL: CUT LOSS NOW (-22% HIT)'
+                         : isTimeLimitWarning ? '⏳ CURRENT SIGNAL: TIME STOP (15 MINS EXPIRED - EXIT AT BREAKEVEN)'
+                         : '🟢 CURRENT SIGNAL: HOLD (WAITING FOR +25% TARGET)'}
+                      </div>
+
                       <div className={`signal-status-box ${isTarget2Hit ? 'target2' : isTarget1Hit ? 'target1' : isStopLossHit ? 'stoploss' : isTimeLimitWarning ? 'timestop' : 'holding'}`}>
                         <div className="signal-badge-head">
                           {isTarget2Hit ? (
